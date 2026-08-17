@@ -1,0 +1,11 @@
+# Phase 1 additional requirements (on top of existing NeuroDecode deps)
+flask>=3.0
+numpy>=1.24
+scipy>=1.11
+brainflow>=5.2
+
+# Optional: for real decoder
+# torch>=2.0
+
+# Optional: for Ollama backend
+# requests (usually pre-installed)

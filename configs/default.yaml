@@ -1,0 +1,106 @@
+# BCI Project Configuration File
+# Default parameters for all experiments
+
+# === Data Configuration ===
+data:
+  dataset_path: "./data/"  # PhysioNet dataset download path
+  subjects: [1, 2, 3, 4, 5, 6, 7, 8]   # Subject IDs to use
+  runs: [4, 5, 6]                      # Motor imagery runs (4,5,6 = imagination)
+  tmin: -1.0                           # Start time relative to event (seconds)
+  tmax: 4.0                            # End time relative to event (seconds)
+  baseline_correction: true            # Apply baseline correction
+  resample_freq: 128                   # Resampling frequency (Hz)
+
+# === Preprocessing Configuration ===
+preprocessing:
+  bandpass_low: 4                      # Low cutoff frequency (Hz)
+  bandpass_high: 38                    # High cutoff frequency (Hz)
+  notch_freq: 60                       # Notch filter frequency (Hz)
+  apply_ica: false                     # Apply ICA for artifact removal
+  ica_n_components: 20                 # Number of ICA components
+  normalize: true                      # Channel-wise z-score normalization
+
+# === EEGNet Model Configuration ===
+eegnet:
+  # Architecture parameters
+  F1: 8                                # Number of temporal filters
+  D: 2                                 # Depth multiplier (spatial filters = F1 * D)
+  kernel_length: 64                    # Temporal convolution kernel length (samples)
+  dropout_rate: 0.5                    # Dropout probability
+  
+  # Training parameters
+  epochs: 100                          # Number of training epochs
+  batch_size: 64                       # Batch size
+  learning_rate: 0.001                 # Initial learning rate
+  weight_decay: 0.01                   # L2 regularization
+  early_stopping_patience: 15          # Early stopping patience
+  
+  # Regularization
+  label_smoothing: 0.0                 # Label smoothing factor (0-0.1 recommended)
+  use_batchnorm: false                 # Add BatchNorm after conv layers
+
+# === CSP Model Configuration ===
+csp:
+  n_components: 4                       # Number of CSP components (pairs)
+  reg: 'ledoit_wolf'                   # Regularization method
+  estimator: 'lwf'                     # Covariance estimator
+  
+  # Classifier
+  classifier: 'lda'                    # 'lda' or 'svm'
+  svm_kernel: 'rbf'                    # SVM kernel type
+
+# === pyRiemann Configuration ===
+riemann:
+  metric: 'riemann'                    # Riemannian metric
+  n_components: 10                     # Number of Tangent Space components
+  estimator: 'lwf'                     # Covariance matrix estimator
+
+# === Data Augmentation Configuration ===
+augmentation:
+  enabled: true                        # Enable data augmentation
+  probability: 0.5                     # Base augmentation probability
+  
+  # Individual augmentation methods
+  temporal_mask:
+    enabled: true
+    prob: 0.3
+    mask_ratio: 0.3                    # Ratio of time points to mask
+  
+  channel_mask:
+    enabled: true
+    prob: 0.2
+    mask_ratio: 0.15                   # Ratio of channels to mask
+  
+  gaussian_noise:
+    enabled: true
+    prob: 0.3
+    snr_db: 10                         # Signal-to-noise ratio in dB
+  
+  time_shift:
+    enabled: true
+    prob: 0.2
+    max_shift_samples: 20              # Maximum shift in samples
+  
+  band_perturbation:
+    enabled: true
+    prob: 0.2
+    band: [8, 30]                      # Frequency band to perturb (Hz)
+    perturbation_scale: 0.1
+  
+  mixup:
+    enabled: true
+    prob: 0.3
+    alpha: 0.2                         # Mixup alpha parameter
+
+# === Evaluation Configuration ===
+evaluation:
+  n_splits: 5                          # Cross-validation folds
+  loso: false                          # Leave-One-Subject-Out validation
+  save_confusion_matrix: true          # Save confusion matrix plot
+  save_model: true                     # Save best model checkpoint
+
+# === Output Configuration ===
+output:
+  save_dir: "./outputs/"  # Output directory
+  log_interval: 10                     # Logging interval (epochs)
+  save_best_only: true                 # Save only best model

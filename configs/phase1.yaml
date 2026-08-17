@@ -1,0 +1,53 @@
+# =============================================================================
+# NeuroDecode Phase 1 Configuration
+# =============================================================================
+# All runtime parameters for the collaborative reasoning demo.
+# Override any value here without touching code.
+# =============================================================================
+
+# BrainFlow data acquisition
+acquisition:
+  sample_rate: 250          # Hz (BrainFlow synthetic board default)
+  window_size: 1000         # samples (4s @ 250Hz, enough for 4s @ 128Hz after resample)
+  window_overlap: 500       # 50% overlap
+
+# EEG stream visualization (rolling window)
+eeg_stream:
+  window_seconds: 2.0       # rolling window duration displayed on UI
+  push_interval: 0.2        # refresh interval in seconds (5 updates/sec)
+  display_channels: 8       # number of EEG channels shown on UI
+  sample_rate: 250          # data source sampling rate
+
+# BCI parameters
+bci:
+  debounce_frames: 3        # consecutive same predictions required to lock intent
+  confidence_threshold: 0.5 # minimum confidence to accept a prediction
+  selection_timeout: 15.0   # seconds to wait for candidate selection before auto-pick
+
+# EEGNet decoder
+decoder:
+  model_sample_rate: 128.0  # Hz (resample target for model input)
+  bandpass_low: 4.0         # Hz (bandpass filter lower bound)
+  bandpass_high: 38.0       # Hz (bandpass filter upper bound)
+  n_classes: 4              # number of MI classes
+  class_labels:             # ordered class names (index must match model output)
+    - left_hand
+    - right_hand
+    - feet
+    - rest
+
+# LLM backend
+llm:
+  default_backend: mock     # mock | ollama | api
+  ollama:
+    model: qwen2.5:7b
+    host: http://localhost:11434
+  api:
+    url: ""                 # e.g. https://api.deepseek.com/v1
+    key: ""                 # your API key
+    model: gpt-4o-mini      # model name
+
+# Visual feedback server
+feedback:
+  host: 127.0.0.1
+  port: 8080
