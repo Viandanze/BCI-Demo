@@ -87,7 +87,43 @@ python scripts/collaborative_reasoning_demo.py \
     --api-model deepseek-chat
 ```
 
-### 5. Use trained EEGNet (instead of mock decoder)
+### 5. Run with Coze agent (bring your own bot)
+
+The `coze` backend calls a deployed [Coze Coding](https://code.coze.cn) agent
+that acts as a pure LLM relay. Bring your own bot in three steps:
+
+1. **Create the relay agent** — on code.coze.cn, create an *agent* project
+   with a prompt like: *"You are an LLM relay service. Forward any user text
+   to the underlying model and return its reply verbatim, with no extra
+   preamble or explanations."*
+2. **Deploy it** — click *Deploy* on the project page and wait for the
+   service to go live. Note the request domain (e.g. `https://xxxx.coze.site`)
+   and the numeric project id shown on the deployment page.
+3. **Configure credentials** — export environment variables (or copy
+   `.env.example` to `.env`; never commit real tokens):
+
+   ```bash
+   export COZE_AGENT_DOMAIN="https://xxxx.coze.site"
+   export COZE_PROJECT_ID="7600000000000000000"
+   export COZE_API_TOKEN="pat_xxx"   # personal access token or project API token
+   ```
+
+Then run:
+
+```bash
+python scripts/collaborative_reasoning_demo.py --backend coze --real-decoder
+```
+
+Notes:
+- Calls use the asynchronous task API (`async_run` + polling), which pairs
+  well with `AsyncLLMBridge`.
+- The agent sandbox may be reclaimed after ~1h of inactivity; the first
+  request after idle can take noticeably longer (cold start). `poll_timeout`
+  (default 120s) bounds the wait.
+- Without the three credentials, the backend reports a visible
+  `[Coze Error: missing configuration ...]` candidate instead of crashing.
+
+### 6. Use trained EEGNet (instead of mock decoder)
 
 Set `USE_REAL_DECODER = True` in `collaborative_reasoning_demo.py`,
 or pass `--real-decoder` flag. Ensure model weights are at `models/eegnet_model.pth`.
