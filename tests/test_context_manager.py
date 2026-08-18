@@ -65,30 +65,30 @@ class TestTurnManagement:
 
     def test_start_turn(self):
         cm = ContextManager()
-        turn = cm.start_turn("query", 0.85, "🔍 Query")
+        turn = cm.start_turn("query", 0.85, "Query")
 
         assert turn.turn_id == 1
         assert turn.intent_mode == "query"
         assert turn.intent_confidence == 0.85
-        assert turn.intent_label == "🔍 Query"
+        assert turn.intent_label == "Query"
         assert cm.state == BCIState.INTENT_LOCKED
         assert cm.current_turn is turn
 
     def test_start_multiple_turns_increments_id(self):
         cm = ContextManager()
 
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_awaiting_llm()
         cm.set_candidates(["a", "b", "c"])
         cm.select_candidate(0)
         cm.reset_to_idle()
 
-        cm.start_turn("create", 0.7, "✨ Create")
+        cm.start_turn("create", 0.7, "Create")
         assert cm.current_turn.turn_id == 2
 
     def test_set_candidates(self):
         cm = ContextManager()
-        cm.start_turn("reason", 0.9, "🧠 Reason")
+        cm.start_turn("reason", 0.9, "Reason")
         cm.set_awaiting_llm()
         cm.set_candidates(["Option A", "Option B", "Option C"])
 
@@ -97,7 +97,7 @@ class TestTurnManagement:
 
     def test_select_candidate_valid(self):
         cm = ContextManager()
-        cm.start_turn("create", 0.75, "✨ Create")
+        cm.start_turn("create", 0.75, "Create")
         cm.set_awaiting_llm()
         cm.set_candidates(["Idea A", "Idea B", "Idea C"])
 
@@ -109,7 +109,7 @@ class TestTurnManagement:
 
     def test_select_candidate_invalid_index(self):
         cm = ContextManager()
-        cm.start_turn("create", 0.75, "✨ Create")
+        cm.start_turn("create", 0.75, "Create")
         cm.set_candidates(["A", "B"])
 
         result = cm.select_candidate(5)  # Out of range
@@ -117,7 +117,7 @@ class TestTurnManagement:
 
     def test_select_candidate_negative_index(self):
         cm = ContextManager()
-        cm.start_turn("create", 0.75, "✨ Create")
+        cm.start_turn("create", 0.75, "Create")
         cm.set_candidates(["A", "B"])
 
         result = cm.select_candidate(-1)
@@ -125,14 +125,14 @@ class TestTurnManagement:
 
     def test_select_without_candidates(self):
         cm = ContextManager()
-        cm.start_turn("create", 0.75, "✨ Create")
+        cm.start_turn("create", 0.75, "Create")
         # No candidates set
         result = cm.select_candidate(0)
         assert result is None
 
     def test_auto_select_best(self):
         cm = ContextManager()
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_candidates(["Best", "Second", "Third"])
 
         result = cm.auto_select_best()
@@ -144,7 +144,7 @@ class TestContextWindow:
 
     def test_turns_archived_after_completion(self):
         cm = ContextManager()
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_candidates(["Response A", "Response B"])
         cm.select_candidate(0)
 
@@ -157,7 +157,7 @@ class TestContextWindow:
         # Create 5 turns
         for i in range(5):
             cm.reset_to_idle()
-            cm.start_turn("query", 0.8, "🔍 Query")
+            cm.start_turn("query", 0.8, "Query")
             cm.set_candidates([f"Response {i}"])
             cm.select_candidate(0)
 
@@ -167,7 +167,7 @@ class TestContextWindow:
 
     def test_get_context_for_llm(self):
         cm = ContextManager(selection_timeout=100.0)
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_candidates(["Answer 1"])
         cm.select_candidate(0)
 
@@ -187,7 +187,7 @@ class TestTimeout:
 
     def test_timeout_in_presenting_candidates(self):
         cm = ContextManager(selection_timeout=0.1)
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_candidates(["A", "B", "C"])
 
         time.sleep(0.15)  # Wait past timeout
@@ -195,7 +195,7 @@ class TestTimeout:
 
     def test_no_timeout_before_expiry(self):
         cm = ContextManager(selection_timeout=5.0)
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_candidates(["A", "B", "C"])
 
         assert cm.check_timeout() is False
@@ -206,7 +206,7 @@ class TestResetToIdle:
 
     def test_reset_to_idle(self):
         cm = ContextManager()
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_candidates(["A", "B"])
         cm.select_candidate(0)
 
@@ -216,7 +216,7 @@ class TestResetToIdle:
 
     def test_reset_preserves_past_turns(self):
         cm = ContextManager()
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_candidates(["A"])
         cm.select_candidate(0)
 
@@ -237,7 +237,7 @@ class TestStateDict:
 
     def test_state_dict_with_active_turn(self):
         cm = ContextManager()
-        cm.start_turn("create", 0.85, "✨ Create")
+        cm.start_turn("create", 0.85, "Create")
         cm.set_candidates(["Idea 1", "Idea 2"])
 
         d = cm.get_state_dict()
@@ -273,7 +273,7 @@ class TestThreadSafety:
 
     def test_concurrent_read_write(self):
         cm = ContextManager()
-        cm.start_turn("query", 0.8, "🔍 Query")
+        cm.start_turn("query", 0.8, "Query")
         cm.set_candidates(["A", "B", "C"])
 
         read_results = []
