@@ -65,10 +65,10 @@ class Intent:
     def mode_label(self) -> str:
         """Human-readable mode label for display."""
         labels = {
-            CognitiveMode.QUERY: "🔍 Query",
-            CognitiveMode.REASON: "🧠 Reason",
-            CognitiveMode.CREATE: "✨ Create",
-            CognitiveMode.REVIEW: "📋 Review",
+            CognitiveMode.QUERY: "Query",
+            CognitiveMode.REASON: "Reason",
+            CognitiveMode.CREATE: "Create",
+            CognitiveMode.REVIEW: "Review",
         }
         return labels.get(self.mode, self.mode.value)
 
