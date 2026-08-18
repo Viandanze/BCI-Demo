@@ -45,10 +45,10 @@ BrainFlow Synthetic Board (8ch, 250Hz)
 
 | Motor Imagery | Cognitive Mode | LLM Instruction |
 |--------------|---------------|-----------------|
-| Left Hand    | 🔍 QUERY      | Search for knowledge / factual information |
-| Right Hand   | 🧠 REASON     | Logical reasoning / calculation / analysis |
-| Feet         | ✨ CREATE     | Generate creative solutions / novel ideas |
-| Tongue       | 📋 REVIEW     | Summarize / synthesize current context |
+| Left Hand    |  QUERY      | Search for knowledge / factual information |
+| Right Hand   |  REASON     | Logical reasoning / calculation / analysis |
+| Feet         |  CREATE     | Generate creative solutions / novel ideas |
+| Tongue       |  REVIEW     | Summarize / synthesize current context |
 
 ## Quick Start
 
@@ -103,7 +103,8 @@ NeuroDecode/
 │   │   └── context_manager.py     # State machine + conversation context
 │   ├── llm_bridge/
 │   │   ├── __init__.py
-│   │   └── llm_client.py          # Ollama/API/Mock LLM backends
+│   │   ├── llm_client.py          # Ollama/API/Mock LLM backends
+│   │   └── async_bridge.py        # Background worker: non-blocking LLM calls
 │   └── feedback/
 │       ├── __init__.py
 │       └── visual_feedback.py     # Flask + SSE web display
