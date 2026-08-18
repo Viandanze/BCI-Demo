@@ -47,3 +47,6 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Environment / secrets
+.env
