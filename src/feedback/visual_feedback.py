@@ -620,9 +620,10 @@ function updateState(data) {
   }
 
   const probBars = document.getElementById('prob-bars');
-  if (data.current_confidence !== null && data.current_confidence !== undefined && data.state !== 'idle') {
+  if (data.current_probabilities && data.current_probabilities.length > 0 && data.state !== 'idle') {
+    const probTotal = data.current_probabilities.reduce((s, p) => s + p, 0) || 1;
     probBars.innerHTML = MI_COLORS.map((c, i) => {
-      const w = (i === 0) ? 100 : 0;
+      const w = ((data.current_probabilities[i] || 0) / probTotal) * 100;
       return '<div class="prob-seg" style="width:' + w + '%;background:' + c + ';box-shadow:0 0 3px ' + c + '"></div>';
     }).join('');
   }
@@ -805,6 +806,7 @@ setInterval(function() {
             "current_intent": intent.get("mode_label") if intent else None,
             "current_mode": intent.get("description") if intent else None,
             "current_confidence": intent.get("confidence") if intent else None,
+            "current_probabilities": intent.get("raw_probabilities") if intent else None,
             "candidates": candidates or [],
         }
         with self._lock:
