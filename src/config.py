@@ -44,6 +44,7 @@ _DEFAULT_CONFIG = {
         'default_backend': 'mock',
         'ollama': {'model': 'qwen2.5:7b', 'host': 'http://localhost:11434'},
         'api': {'url': '', 'key': '', 'model': 'gpt-4o-mini'},
+        'coze': {'domain': '', 'project_id': '', 'poll_timeout': 120.0},
     },
     'feedback': {
         'host': '127.0.0.1',
