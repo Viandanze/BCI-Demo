@@ -35,6 +35,9 @@ Usage:
     --api-key YOUR_KEY \\
     --model deepseek-chat
 
+  # Coze agent mode (bring your own bot, credentials via COZE_* env vars):
+  python scripts/collaborative_reasoning_demo.py --backend coze --real-decoder
+
   # Custom config:
   python scripts/collaborative_reasoning_demo.py --config configs/phase1.yaml
 
