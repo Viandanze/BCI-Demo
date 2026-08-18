@@ -107,6 +107,30 @@ class TestAPIClient:
         )
         assert client.is_available() is True
 
+    def test_env_variable_fallback(self, monkeypatch):
+        """Config falls back to LLM_API_URL / LLM_API_KEY / LLM_API_MODEL."""
+        monkeypatch.setenv("LLM_API_URL", "https://api.example.com/v1/")
+        monkeypatch.setenv("LLM_API_KEY", "sk-test")
+        monkeypatch.setenv("LLM_API_MODEL", "test-model")
+        client = APIClient()
+        assert client.api_url == "https://api.example.com/v1"
+        assert client.api_key == "sk-test"
+        assert client.model == "test-model"
+        assert client.is_available() is True
+
+    def test_explicit_args_override_env(self, monkeypatch):
+        """Constructor arguments take precedence over environment variables."""
+        monkeypatch.setenv("LLM_API_URL", "https://env.example.com/v1")
+        monkeypatch.setenv("LLM_API_KEY", "sk-env")
+        client = APIClient(
+            api_url="https://arg.example.com/v1",
+            api_key="sk-arg",
+            model="arg-model",
+        )
+        assert client.api_url == "https://arg.example.com/v1"
+        assert client.api_key == "sk-arg"
+        assert client.model == "arg-model"
+
 
 class TestCreateLLMClient:
     """Test factory function."""

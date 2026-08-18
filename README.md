@@ -238,7 +238,7 @@ NeuroDecode Phase 1 bridges BCI motor imagery decoding with LLM-powered collabor
 ```
 EEG Signal -> BrainFlow -> EEGNet Decoder -> IntentEncoder -> ContextManager
                                                               |
-                                                    LLM Bridge (Ollama/API/Mock)
+                                                    LLM Bridge (Ollama/API/Coze/Mock)
                                                               |
                                                     3 Candidate Responses
                                                               |
@@ -260,7 +260,7 @@ EEG Signal -> BrainFlow -> EEGNet Decoder -> IntentEncoder -> ContextManager
 
 ```bash
 # Install Phase 1 dependencies
-pip install flask brainflow scipy pyyaml
+pip install -r requirements_phase1.txt
 
 # Run collaborative reasoning demo with mock LLM
 python scripts/collaborative_reasoning_demo.py --backend mock
@@ -284,31 +284,131 @@ All runtime parameters are externalized to `configs/phase1.yaml`. CLI arguments 
 | `eeg_stream` | window_seconds, push_interval, display_channels | Rolling-window EEG display |
 | `bci` | debounce_frames, confidence_threshold, selection_timeout | Intent decoding parameters |
 | `decoder` | model_sample_rate, bandpass_low/high, n_classes | EEGNet preprocessing config |
-| `llm` | default_backend, ollama/api settings | LLM backend configuration |
+| `llm` | default_backend, ollama/api settings | LLM backend configuration (mock/ollama/api/coze) |
 | `feedback` | host, port | Web UI server settings |
 
 Edit the YAML file directly, no code changes needed.
 
-### With Real LLM (Ollama)
+### Connecting a Real LLM (Pick a Backend)
 
-```bash
-# Install Ollama from https://ollama.ai
-ollama pull qwen2.5:7b
-ollama serve
+The demo works out of the box with canned responses (`--backend mock`).
+For real generation, pick **one** of the backends below — they all implement
+the same `LLMClient` interface, so switching is a one-flag change.
 
-# Run with real LLM
-python scripts/collaborative_reasoning_demo.py --backend ollama --model qwen2.5:7b
-```
+| Backend | Setup | Cost | Runs locally? | Best for |
+|---------|-------|------|---------------|----------|
+| `mock` | none | free | — | 30-second trial, CI, no LLM at all |
+| `ollama` | install Ollama + pull a model | free | yes | privacy, offline use, no API key, own GPU |
+| `api` | get an API key | pay-per-token | no (cloud) | best quality, no GPU needed |
+| `coze` | deploy a Coze agent + token | per plan | no (cloud) | Coze users, agent-side prompt control |
 
-### With Cloud API (DeepSeek/OpenAI-compatible)
+If the chosen backend is unavailable at startup, the demo **automatically
+falls back to mock responses** instead of crashing. Check the terminal banner
+and the UI badge to see which backend is actually live (see
+[Verify which backend is live](#verify-which-backend-is-live)).
 
-```bash
-python scripts/collaborative_reasoning_demo.py \
-  --backend api \
-  --api-url https://api.deepseek.com/v1 \
-  --api-key YOUR_KEY \
-  --api-model deepseek-chat
-```
+#### Option 1 — Ollama (local, free, private)
+
+1. Install Ollama from <https://ollama.com/download> (Windows / macOS / Linux).
+2. Pull a model that fits your RAM / VRAM:
+
+   | Model | Download size | Suggested when |
+   |-------|---------------|----------------|
+   | `qwen2.5:3b` | ~2 GB | 8 GB RAM, laptops |
+   | `qwen2.5:7b` | ~4.7 GB | 16 GB RAM (project default) |
+   | `llama3.1:8b` | ~4.9 GB | alternative at the same size |
+
+   ```bash
+   ollama pull qwen2.5:7b
+   ```
+
+3. Ollama serves on `http://localhost:11434` by default. The desktop app
+   starts the server automatically; on a headless server run `ollama serve`.
+4. Run the demo:
+
+   ```bash
+   python scripts/collaborative_reasoning_demo.py --backend ollama --real-decoder
+   ```
+
+   Use `--model` and `--host` to override the model name and server URL.
+
+#### Option 2 — Any OpenAI-compatible API (DeepSeek, OpenAI, Moonshot, vLLM, ...)
+
+Works with every endpoint that implements `/chat/completions`.
+
+1. Create an API key at your provider (e.g. <https://platform.deepseek.com>).
+2. Either pass flags directly:
+
+   ```bash
+   python scripts/collaborative_reasoning_demo.py \
+     --backend api --real-decoder \
+     --api-url https://api.deepseek.com/v1 \
+     --api-key YOUR_KEY \
+     --api-model deepseek-chat
+   ```
+
+   ...or keep the key out of your shell history: copy `.env.example` to `.env`
+   and fill in the values — the demo loads `.env` automatically.
+
+   ```bash
+   cp .env.example .env   # then edit .env
+   python scripts/collaborative_reasoning_demo.py --backend api --real-decoder
+   ```
+
+   Common endpoints:
+
+   | Provider | `--api-url` | `--api-model` |
+   |----------|-------------|---------------|
+   | DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` |
+   | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` |
+   | Moonshot Kimi | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |
+   | Local vLLM | `http://localhost:8000/v1` | your served model |
+
+#### Option 3 — Coze agent (relay through a deployed Coze agent)
+
+Instead of calling a raw model endpoint, NeuroDecode can relay prompts to an
+agent deployed on Coze (coze.cn / coze.com). The agent forwards the prompt to
+its underlying model and returns the answer.
+
+1. Deploy an agent on Coze with a plain LLM-relay prompt.
+2. Collect three values: the agent service domain (`https://xxxx.coze.site`),
+   the project id, and a personal access token (PAT) or project API token.
+3. Copy `.env.example` to `.env` and fill in `COZE_AGENT_DOMAIN`,
+   `COZE_PROJECT_ID`, `COZE_API_TOKEN`.
+4. Run:
+
+   ```bash
+   python scripts/collaborative_reasoning_demo.py --backend coze --real-decoder
+   ```
+
+Notes:
+
+- The agent sandbox may sleep after ~1 h of inactivity; the first request
+  after an idle period can take noticeably longer (cold start). If you hit
+  the LLM wait timeout, add `--llm-wait-timeout 60`.
+- Tokens stay in `.env`, which is git-ignored. Never commit real keys.
+
+#### Verify which backend is live
+
+- Terminal banner at startup: `LLM backend: CozeClient OK`
+  (or `OllamaClient` / `APIClient` / `MockLLMClient`). A warning line means
+  the backend was unreachable and mock fallback is active.
+- Web UI: the Pipeline Stats badge and the footer show the live backend
+  (COZE / OLLAMA / API / MOCK).
+
+#### Environment variables reference
+
+| Variable | Used by backend | Meaning |
+|----------|-----------------|---------|
+| `LLM_API_URL` | `api` | OpenAI-compatible endpoint |
+| `LLM_API_KEY` | `api` | API key |
+| `LLM_API_MODEL` | `api` | Model name |
+| `COZE_AGENT_DOMAIN` | `coze` | Agent service domain |
+| `COZE_PROJECT_ID` | `coze` | Numeric project id |
+| `COZE_API_TOKEN` | `coze` | PAT or project API token |
+
+Precedence: CLI flags > real environment variables > `.env` values.
+All secrets live in `.env` (git-ignored); `.env.example` documents every key.
 
 ### Running Tests
 
@@ -329,7 +429,7 @@ Current coverage: 86%+ across intent encoder, context manager, LLM client, confi
 | RealDecoder | `src/decoders/real_decoder.py` | EEGNet-based decoder with auto-architecture inference + 5-step preprocessing |
 | IntentEncoder | `src/intent/intent_encoder.py` | MI classification to cognitive mode mapping with debounce + confidence threshold |
 | ContextManager | `src/intent/context_manager.py` | Thread-safe state machine + dialogue context window |
-| LLMClient | `src/llm_bridge/llm_client.py` | Pluggable LLM backend: Ollama / OpenAI-compatible API / Mock |
+| LLMClient | `src/llm_bridge/llm_client.py` | Pluggable LLM backend: Ollama / OpenAI-compatible API / Coze agent / Mock |
 | VisualFeedback | `src/feedback/visual_feedback.py` | Flask + SSE real-time web UI with EEG waveform + candidate cards |
 | Demo | `scripts/collaborative_reasoning_demo.py` | Main entry point, orchestrates full collaborative reasoning pipeline |
 

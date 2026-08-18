@@ -279,19 +279,32 @@ class APIClient(LLMClient):
       - OpenAI API
       - Local vLLM server
       - Any OpenAI-compatible service
+
+    Configuration can come from constructor args or from the environment
+    variables LLM_API_URL / LLM_API_KEY / LLM_API_MODEL (or a .env file,
+    which the demo loads automatically).
     """
 
     def __init__(
         self,
-        api_url: str,
-        api_key: str,
-        model: str,
+        api_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
         temperature: float = 0.8,
         timeout: int = 30,
     ):
-        self.api_url = api_url.rstrip("/")
-        self.api_key = api_key
-        self.model = model
+        """
+        Args:
+            api_url: OpenAI-compatible endpoint, e.g. https://api.deepseek.com/v1
+                (env: LLM_API_URL).
+            api_key: API key (env: LLM_API_KEY).
+            model: Model name, e.g. deepseek-chat (env: LLM_API_MODEL).
+            temperature: Sampling temperature.
+            timeout: Request timeout in seconds.
+        """
+        self.api_url = (api_url or os.getenv("LLM_API_URL", "")).rstrip("/")
+        self.api_key = api_key or os.getenv("LLM_API_KEY", "")
+        self.model = model or os.getenv("LLM_API_MODEL", "")
         self.temperature = temperature
         self.timeout = timeout
 

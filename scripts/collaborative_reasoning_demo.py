@@ -583,15 +583,29 @@ def main():
             "host": args.host or config['llm']['ollama']['host'],
         }
     elif backend == "api":
+        # Precedence: CLI args > config file > env vars / .env file.
+        # APIClient falls back to LLM_API_URL / LLM_API_KEY / LLM_API_MODEL
+        # on its own, so values left empty here can still resolve via .env.
         api_url = args.api_url or config['llm']['api']['url']
         api_key = args.api_key or config['llm']['api']['key']
-        if not api_url or not api_key:
-            parser.error("--api-url and --api-key required for api backend")
-        llm_kwargs = {
-            "api_url": api_url,
-            "api_key": api_key,
-            "model": args.api_model or config['llm']['api']['model'],
-        }
+        if not api_url and not os.getenv("LLM_API_URL"):
+            parser.error(
+                "--api-url is required for the api backend "
+                "(or set LLM_API_URL / LLM_API_KEY / LLM_API_MODEL in .env)"
+            )
+        if not api_key and not os.getenv("LLM_API_KEY"):
+            parser.error(
+                "--api-key is required for the api backend "
+                "(or set LLM_API_URL / LLM_API_KEY / LLM_API_MODEL in .env)"
+            )
+        llm_kwargs = {}
+        if api_url:
+            llm_kwargs["api_url"] = api_url
+        if api_key:
+            llm_kwargs["api_key"] = api_key
+        api_model = args.api_model or config['llm']['api']['model']
+        if api_model:
+            llm_kwargs["model"] = api_model
 
     demo = CollaborativeReasoningDemo(
         llm_backend=backend,
