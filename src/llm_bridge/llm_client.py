@@ -4,6 +4,7 @@ LLM Bridge - Abstract interface for LLM backends.
 Supports:
   - Ollama (local, private, zero-cost) — default for Phase 1
   - OpenAI-compatible API (cloud, higher quality) — Phase 2
+  - Coze agent (deployed Coze Coding agent relay, async task API)
 
 Design:
   The LLM acts as the "knowledge engine" in the collaborative reasoning loop.
@@ -21,6 +22,7 @@ Prompt strategy:
 from abc import ABC, abstractmethod
 from typing import Optional
 import json
+import os
 import time
 import logging
 
@@ -353,6 +355,264 @@ class APIClient(LLMClient):
             return [f"[API Error: {e}]"]
 
 
+class CozeClient(LLMClient):
+    """
+    Coze agent backend: calls a deployed Coze Coding agent (pure LLM relay).
+
+    API flow (Coze agent service, asynchronous mode):
+      1. POST {domain}/async_run  -> {"task_id": "...", "status": "pending"}
+      2. GET  {domain}/task/{task_id}  (poll until a terminal status)
+      3. Extract result.messages -> last message with type == "ai" -> content
+
+    The deployed relay agent forwards the query verbatim to the underlying
+    model, so the system prompt and the user request are composed into a
+    single query text.
+
+    Credentials are read from environment variables (never hardcode them):
+      COZE_AGENT_DOMAIN  e.g. "https://xxxx.coze.site"
+      COZE_PROJECT_ID    numeric project id, e.g. "7600000000000000000"
+      COZE_API_TOKEN     personal access token ("pat_...") or project API token
+
+    Note: the agent sandbox may be reclaimed after ~1 hour of inactivity;
+    the first request after an idle period can take noticeably longer
+    (cold start). Total wall time is bounded by `poll_timeout`.
+    """
+
+    def __init__(
+        self,
+        domain: Optional[str] = None,
+        project_id=None,
+        api_token: Optional[str] = None,
+        session_id: str = "neurodecode",
+        poll_interval: float = 1.0,
+        poll_timeout: float = 120.0,
+        request_timeout: float = 15.0,
+    ):
+        """
+        Args:
+            domain: Coze agent service domain (env: COZE_AGENT_DOMAIN).
+            project_id: Numeric project id (env: COZE_PROJECT_ID).
+            api_token: Bearer token (env: COZE_API_TOKEN).
+            session_id: Server-side conversation id for multi-turn context.
+            poll_interval: Seconds between task status polls.
+            poll_timeout: Max seconds to wait for task completion.
+            request_timeout: Per-HTTP-request timeout in seconds.
+        """
+        self.domain = (domain or os.getenv("COZE_AGENT_DOMAIN", "")).rstrip("/")
+        raw_pid = str(project_id) if project_id is not None else os.getenv("COZE_PROJECT_ID", "")
+        try:
+            self.project_id = int(raw_pid) if str(raw_pid).strip() else None
+        except (TypeError, ValueError):
+            self.project_id = None
+        self.api_token = api_token or os.getenv("COZE_API_TOKEN", "")
+        self.session_id = session_id
+        self.poll_interval = poll_interval
+        self.poll_timeout = poll_timeout
+        self.request_timeout = request_timeout
+
+    def is_available(self) -> bool:
+        """All three credentials must be configured (no network probe)."""
+        return bool(self.domain and self.project_id and self.api_token)
+
+    def _auth_headers(self) -> dict:
+        return {
+            "Authorization": f"Bearer {self.api_token}",
+            "Content-Type": "application/json",
+        }
+
+    def _build_system_prompt(self, intent_mode: str, n_candidates: int) -> str:
+        """Same prompt contract as OllamaClient (candidates as JSON array)."""
+        mode_desc = OllamaClient.MODE_DESCRIPTIONS.get(
+            intent_mode, "Assist the user with their query."
+        )
+        personas = OllamaClient.CANDIDATE_PERSONAS[:n_candidates]
+        persona_list = "\n".join(
+            f"  {i + 1}. {p}" for i, p in enumerate(personas)
+        )
+        return (
+            "You are an AI assistant collaborating with a human through a "
+            "Brain-Computer Interface (BCI). The user's intent is decoded from "
+            "EEG signals and may be imprecise. Your role is to generate "
+            "candidate responses that the user will select from using their "
+            "brain signals.\n\n"
+            f"Current cognitive mode: {intent_mode}\n"
+            f"Mode description: {mode_desc}\n\n"
+            f"Generate exactly {n_candidates} candidate responses, each from a "
+            f"different perspective:\n{persona_list}\n\n"
+            "Rules:\n"
+            "- Keep each response under 3 sentences (for rapid BCI selection)\n"
+            "- Make responses genuinely different in approach, not just rephrasings\n"
+            "- Be specific and actionable, not vague\n"
+            "- Return as a JSON array of strings, e.g.: "
+            '["response 1", "response 2", "response 3"]\n'
+            "- Do not include any text outside the JSON array"
+        )
+
+    def _submit_task(self, query_text: str) -> str:
+        """Submit an async_run task and return its task_id."""
+        import requests
+
+        resp = requests.post(
+            f"{self.domain}/async_run",
+            headers=self._auth_headers(),
+            json={
+                "content": {
+                    "query": {
+                        "prompt": [
+                            {"content": {"text": query_text}, "type": "text"}
+                        ]
+                    }
+                },
+                "type": "query",
+                "session_id": self.session_id,
+                "project_id": self.project_id,
+            },
+            timeout=self.request_timeout,
+        )
+        resp.raise_for_status()
+        task_id = resp.json().get("task_id")
+        if not task_id:
+            raise RuntimeError("Coze async_run response did not contain a task_id")
+        return task_id
+
+    def _wait_for_result(self, task_id: str) -> str:
+        """Poll task status until terminal, return the raw answer text."""
+        import requests
+
+        deadline = time.time() + self.poll_timeout
+        while time.time() < deadline:
+            resp = requests.get(
+                f"{self.domain}/task/{task_id}",
+                headers=self._auth_headers(),
+                timeout=self.request_timeout,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            status = data.get("status")
+            if status == "completed":
+                return self._extract_answer(data.get("result") or {})
+            if status in ("failed", "timeout"):
+                raise RuntimeError(
+                    f"Coze task {task_id} ended with status={status}: "
+                    f"{data.get('error')}"
+                )
+            time.sleep(self.poll_interval)
+        raise TimeoutError(
+            f"Coze task {task_id} did not complete within {self.poll_timeout:.0f}s"
+        )
+
+    @staticmethod
+    def _extract_answer(result: dict) -> str:
+        """Pull the final assistant text out of a completed task result."""
+        messages = result.get("messages") or []
+        for msg in reversed(messages):
+            if msg.get("type") != "ai":
+                continue
+            content = msg.get("content")
+            if isinstance(content, str):
+                return content
+            if isinstance(content, list):  # multimodal content blocks
+                return "".join(
+                    block.get("text", "")
+                    for block in content
+                    if isinstance(block, dict)
+                )
+        # Fallback: last message, whatever its type.
+        if messages:
+            content = messages[-1].get("content")
+            if isinstance(content, str):
+                return content
+        return ""
+
+    def _query(self, query_text: str) -> str:
+        """Submit one async task and return its final answer text."""
+        task_id = self._submit_task(query_text)
+        return self._wait_for_result(task_id)
+
+    def _parse_candidates(self, content: str, n_candidates: int) -> list:
+        """Parse a JSON array of candidates, with resilient fallbacks."""
+        try:
+            candidates = json.loads(content)
+            if isinstance(candidates, list) and candidates:
+                return [str(c) for c in candidates[:n_candidates]]
+        except json.JSONDecodeError:
+            import re
+            match = re.search(r"\[.*\]", content, re.DOTALL)
+            if match:
+                try:
+                    candidates = json.loads(match.group())
+                    if isinstance(candidates, list) and candidates:
+                        return [str(c) for c in candidates[:n_candidates]]
+                except json.JSONDecodeError:
+                    pass
+        return [content] if content else []
+
+    def generate_candidates(
+        self,
+        intent_mode: str,
+        context: list[dict],
+        n_candidates: int = 3,
+        topic_hint: str = "",
+    ) -> list[str]:
+        """Generate candidate responses via the Coze agent relay."""
+        if not self.is_available():
+            missing = [
+                name
+                for name, value in (
+                    ("COZE_AGENT_DOMAIN", self.domain),
+                    ("COZE_PROJECT_ID", self.project_id),
+                    ("COZE_API_TOKEN", self.api_token),
+                )
+                if not value
+            ]
+            return [
+                f"[Coze Error: missing configuration ({', '.join(missing)}). "
+                "Set them via constructor or environment variables.]"
+            ]
+
+        query_text = self._build_system_prompt(intent_mode, n_candidates)
+        context_tail = "\n".join(
+            f"{m.get('role', 'user')}: {m.get('content', '')}"
+            for m in context[-6:]
+        )
+        if context_tail:
+            query_text += f"\n\nRecent conversation:\n{context_tail}"
+        user_line = "Generate candidate responses."
+        if topic_hint:
+            user_line += f" Topic hint: {topic_hint}"
+        query_text += f"\n\nUser request: {user_line}"
+
+        try:
+            content = self._query(query_text)
+            candidates = self._parse_candidates(content, n_candidates)
+            if candidates:
+                return candidates
+            return ["[Coze Error: agent returned an empty response.]"]
+        except Exception as e:
+            logger.error(f"Coze generation failed: {e}")
+            return [f"[Coze Error: {e}]"]
+
+    def expand_response(self, selected_response: str, intent_mode: str,
+                        context: list[dict]) -> str:
+        """Expand the selected candidate into a fuller response."""
+        if not self.is_available():
+            return selected_response
+
+        query_text = (
+            "You are an AI assistant collaborating with a human through a BCI. "
+            "The user has selected a response direction. Elaborate on it with "
+            "more detail and depth. Keep it under 200 words. "
+            "Do not add any preamble; reply with the elaboration only.\n\n"
+            f"Selected direction: {selected_response}"
+        )
+        try:
+            expanded = self._query(query_text)
+            return expanded if expanded else selected_response
+        except Exception as e:
+            logger.error(f"Coze expansion failed: {e}")
+            return selected_response
+
+
 class MockLLMClient(LLMClient):
     """
     Mock LLM client for testing without Ollama or API.
@@ -418,7 +678,11 @@ def create_llm_client(backend: str = "ollama", **kwargs) -> LLMClient:
         return OllamaClient(**kwargs)
     elif backend == "api":
         return APIClient(**kwargs)
+    elif backend == "coze":
+        return CozeClient(**kwargs)
     elif backend == "mock":
         return MockLLMClient(**kwargs)
     else:
-        raise ValueError(f"Unknown backend: {backend}. Use 'ollama', 'api', or 'mock'.")
+        raise ValueError(
+            f"Unknown backend: {backend}. Use 'ollama', 'api', 'coze', or 'mock'."
+        )
