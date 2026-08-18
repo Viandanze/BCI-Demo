@@ -704,6 +704,11 @@ evtSource.onmessage = function(e) {
     }
   }
   else if (data.type === 'history') { updateHistory(data.turns); }
+  else if (data.type === 'mode') {
+    const lbl = data.label.toUpperCase();
+    document.getElementById('pipe-mode').textContent = lbl;
+    document.getElementById('sb-mode').textContent = lbl + ' Mode';
+  }
   else if (data.type === 'selection') {
     document.querySelectorAll('.candidate').forEach((card, i) => {
       if (i === data.index) card.classList.add(data.auto ? 'auto-selected' : 'selected');
@@ -736,6 +741,7 @@ setInterval(function() {
         self._state_queue: Queue = Queue(maxsize=50)
         self._latest_state: dict = {"type": "state", "state": "idle"}
         self._history: list = []
+        self._mode_label: str = "mock"
         self._lock = threading.Lock()
         self._thread: Optional[threading.Thread] = None
         self._running = False
@@ -750,6 +756,7 @@ setInterval(function() {
         def events():
             def event_stream():
                 yield "retry: 5000\n\n"
+                yield f"data: {json.dumps({'type': 'mode', 'label': self._mode_label})}\n\n"
                 yield f"data: {json.dumps(self._latest_state)}\n\n"
                 while self._running:
                     # State events have priority over EEG data
@@ -827,6 +834,21 @@ setInterval(function() {
         event = {"type": "history", "turns": turns}
         try:
             self._state_queue.put_nowait(event)
+        except Full:
+            pass
+
+    def set_mode(self, label: str):
+        """Set the pipeline mode label shown in the UI badges.
+
+        Called once by the demo after the LLM backend is resolved, so the
+        footer and the stats badge reflect the real backend (coze/ollama/api)
+        instead of the hardcoded default. Persisted as an instance attribute
+        so late-connecting browsers also receive it on stream open.
+        """
+        with self._lock:
+            self._mode_label = label
+        try:
+            self._state_queue.put_nowait({"type": "mode", "label": label})
         except Full:
             pass
 

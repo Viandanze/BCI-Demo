@@ -207,8 +207,11 @@ class CollaborativeReasoningDemo:
 
         if self.llm_bridge.is_available:
             logger.info(f"LLM backend: {self.llm_client.__class__.__name__} OK")
+            mode_label = self.llm_client.__class__.__name__.replace("Client", "").lower()
         else:
             logger.warning(f"LLM backend not available! Will use mock responses.")
+            mode_label = "mock"
+        self.feedback.set_mode(mode_label)
 
         if not self.acquisition.available:
             logger.error("BrainFlow not available. Install with: pip install brainflow")
