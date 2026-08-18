@@ -511,7 +511,26 @@ class CollaborativeReasoningDemo:
 # Entry Point
 # =============================================================================
 
+def _load_env_file(path: str = ".env") -> None:
+    """Load KEY=VALUE pairs from a .env file into os.environ (no deps).
+
+    Real environment variables always win: .env only fills gaps, so it is
+    safe on machines without the file. Used for the coze backend
+    credentials (COZE_AGENT_DOMAIN / COZE_PROJECT_ID / COZE_API_TOKEN).
+    """
+    if not os.path.isfile(path):
+        return
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip())
+
+
 def main():
+    _load_env_file()
     parser = argparse.ArgumentParser(
         description="NeuroDecode x LLM Collaborative Reasoning Demo"
     )
