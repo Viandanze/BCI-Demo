@@ -535,7 +535,7 @@ def main():
         description="NeuroDecode x LLM Collaborative Reasoning Demo"
     )
     parser.add_argument(
-        "--backend", choices=["ollama", "api", "mock"], default=None,
+        "--backend", choices=["ollama", "api", "coze", "mock"], default=None,
         help="LLM backend (default: from config, usually mock)",
     )
     parser.add_argument("--model", default=None, help="Ollama model name")
