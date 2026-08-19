@@ -59,8 +59,8 @@ from src.config import load_config
 from src.acquisition import BrainFlowAcquisition, EEGStreamConfig, EEGStreamManager
 from src.decoders import MockDecoder, RealDecoder
 from src.intent import IntentEncoder, ContextManager, BCIState
-from src.llm_bridge import create_llm_client, AsyncLLMBridge
-from src.feedback import VisualFeedback
+from src.llm_bridge import create_llm_client, AsyncLLMBridge, CachedLLMClient
+from src.feedback import VisualFeedback, AudioFeedback
 
 # --- Logging ---
 logging.basicConfig(
@@ -116,6 +116,8 @@ class CollaborativeReasoningDemo:
         llm_wait_timeout: float = 15.0,
         llm_timeout_policy: str = "fallback",
         completed_pause: float = 2.0,
+        audio: Optional[AudioFeedback] = None,
+        use_cache: Optional[bool] = None,
     ):
         """
         Args:
@@ -138,6 +140,10 @@ class CollaborativeReasoningDemo:
                 "abort" (return to idle) on LLM timeout/failure.
             completed_pause: Seconds to linger in COMPLETED before resetting
                 to IDLE (non-blocking; EEG keeps flowing).
+            audio: Optional AudioFeedback override; defaults to one built
+                from config['feedback']['audio'].
+            use_cache: Wrap the LLM client in CachedLLMClient; None falls
+                back to config['llm']['cache']['enabled'].
         """
         if llm_timeout_policy not in ("fallback", "abort"):
             raise ValueError(
@@ -159,13 +165,40 @@ class CollaborativeReasoningDemo:
         self.context_manager = ContextManager(
             selection_timeout=config['bci']['selection_timeout']
         )
-        self.llm_client = (
+        base_client = (
             llm_client if llm_client is not None
             else create_llm_client(llm_backend, **(llm_kwargs or {}))
         )
+        if use_cache is None:
+            use_cache = config.get('llm', {}).get(
+                'cache', {}
+            ).get('enabled', True)
+        if use_cache:
+            cache_cfg = config.get('llm', {}).get('cache', {})
+            self.llm_client = CachedLLMClient(
+                base_client,
+                maxsize=cache_cfg.get('maxsize', 64),
+                ttl=cache_cfg.get('ttl', 300.0),
+            )
+        else:
+            self.llm_client = base_client
         self.llm_bridge = AsyncLLMBridge(self.llm_client)
-        self.feedback = feedback if feedback is not None else VisualFeedback()
+        if feedback is not None:
+            self.feedback = feedback
+        else:
+            self.feedback = VisualFeedback(
+                eeg_downsample=config.get('feedback', {}).get(
+                    'eeg_downsample', 1
+                ),
+            )
         self.feedback.port = config['feedback']['port']
+
+        # Phase 2 audio cues (silent no-op without a beep backend).
+        if audio is not None:
+            self.audio = audio
+        else:
+            audio_cfg = config.get('feedback', {}).get('audio', {})
+            self.audio = AudioFeedback(enabled=audio_cfg.get('enabled', True))
 
         # Asynchronous LLM bookkeeping (main thread only).
         self._llm_wait_timeout = llm_wait_timeout
@@ -281,6 +314,17 @@ class CollaborativeReasoningDemo:
         if intent is not None and intent.is_confident:
             logger.info(f"Intent locked: {intent.mode_label} "
                         f"(confidence: {intent.confidence:.2%})")
+            self.audio.play("intent_locked")
+
+            # Phase 2: feed decoder-side stats into the LLM context.
+            intent_dict = intent.to_dict()
+            raw_probs = intent_dict.get("raw_probabilities") or []
+            labels = self.config['decoder']['class_labels']
+            distribution = dict(zip(labels, raw_probs)) if raw_probs else {}
+            self.context_manager.record_eeg_stats(
+                mean_confidence=intent.confidence,
+                intent_distribution=distribution,
+            )
 
             turn = self.context_manager.start_turn(
                 intent_mode=intent.mode.value,
@@ -290,7 +334,7 @@ class CollaborativeReasoningDemo:
 
             self.feedback.update_state(
                 "intent_locked",
-                intent=intent.to_dict(),
+                intent=intent_dict,
             )
 
     def _handle_intent_locked(self):
@@ -305,7 +349,8 @@ class CollaborativeReasoningDemo:
             self.context_manager.reset_to_idle()
             return
 
-        context = self.context_manager.get_context_for_llm()
+        # Phase 2: session summary + recent turns + EEG stats.
+        context = self.context_manager.get_enhanced_context()
         logger.info(f"Querying LLM in background (mode={current_turn.intent_mode})...")
 
         try:
@@ -359,6 +404,7 @@ class CollaborativeReasoningDemo:
             logger.info(f"  [{i}] {c[:80]}...")
 
         self._pending_llm_id = None
+        self.audio.play("candidates_ready")
         self.context_manager.set_candidates(candidates)
         self.feedback.update_state(
             "presenting_candidates",
@@ -377,6 +423,7 @@ class CollaborativeReasoningDemo:
         retry, so an unreachable LLM backend cannot trigger a retry storm.
         """
         self._pending_llm_id = None
+        self.audio.play("error")
 
         if self._llm_timeout_policy == "abort":
             logger.error(f"LLM unavailable ({reason}). Aborting turn, back to idle.")
@@ -426,6 +473,7 @@ class CollaborativeReasoningDemo:
             return
 
         self.feedback.update_selection(index, auto=auto)
+        self.audio.play("candidate_selected")
 
         current_turn = self.context_manager.current_turn
         self._completed_pause_until = time.time() + self._completed_pause
@@ -496,6 +544,7 @@ class CollaborativeReasoningDemo:
 
     def _finish_turn(self, final_response: str):
         """Push history to the UI and close the turn in the logs."""
+        self.audio.play("turn_completed")
         self.feedback.update_history(
             [t.to_dict() for t in self.context_manager.turns]
         )
@@ -566,6 +615,14 @@ def main():
     )
     parser.add_argument("--port", type=int, default=None, help="Web UI port (default: from config)")
     parser.add_argument(
+        "--no-audio", action="store_true",
+        help="Disable audio cues (default: enabled where a beep backend exists)",
+    )
+    parser.add_argument(
+        "--no-cache", action="store_true",
+        help="Disable LLM response caching (default: from config)",
+    )
+    parser.add_argument(
         "--config", default=None,
         help="Path to YAML config file (default: configs/phase1.yaml)",
     )
@@ -615,6 +672,8 @@ def main():
         config=config,
         llm_wait_timeout=args.llm_wait_timeout,
         llm_timeout_policy=args.llm_timeout_policy,
+        audio=AudioFeedback(enabled=False) if args.no_audio else None,
+        use_cache=False if args.no_cache else None,
     )
 
     if args.port is not None:

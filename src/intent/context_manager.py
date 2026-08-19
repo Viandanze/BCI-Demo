@@ -80,6 +80,15 @@ class ContextManager:
         self._selection_timeout = selection_timeout
         self._last_state_change = time.time()
         self._turn_start_time = 0.0
+        # Rolling session stats (Phase 2): survive turn-list trimming so
+        # the enhanced LLM context keeps a complete session summary.
+        self._stats = {
+            "total_turns": 0,
+            "mode_counts": {},
+            "confidence_sum": 0.0,
+            "duration_sum": 0.0,
+        }
+        self._last_eeg_stats: Optional[dict] = None
 
     @property
     def state(self) -> BCIState:
@@ -161,6 +170,15 @@ class ContextManager:
             self._current_turn.final_response = self._current_turn.llm_candidates[index]
             self._current_turn.duration = time.time() - self._turn_start_time
 
+            # Update rolling session stats before archiving (Phase 2).
+            done = self._current_turn
+            self._stats["total_turns"] += 1
+            self._stats["mode_counts"][done.intent_mode] = (
+                self._stats["mode_counts"].get(done.intent_mode, 0) + 1
+            )
+            self._stats["confidence_sum"] += done.intent_confidence
+            self._stats["duration_sum"] += done.duration
+
             # Archive turn
             self._turns.append(self._current_turn)
             if len(self._turns) > self.MAX_CONTEXT_TURNS:
@@ -193,6 +211,92 @@ class ContextManager:
                     "content": turn.final_response,
                 })
             return context
+
+    def record_eeg_stats(self, mean_confidence: float,
+                         intent_distribution: dict) -> None:
+        """Record the latest decoder-side EEG statistics (Phase 2).
+
+        Injected into the enhanced LLM context so the model knows the
+        current signal quality and intent distribution.
+        """
+        with self._lock:
+            self._last_eeg_stats = {
+                "mean_confidence": round(float(mean_confidence), 3),
+                "intent_distribution": {
+                    str(k): round(float(v), 3)
+                    for k, v in (intent_distribution or {}).items()
+                },
+            }
+
+    def _summary_locked(self) -> str:
+        """Session summary; caller must hold the lock."""
+        total = self._stats["total_turns"]
+        if total == 0:
+            return "First turn of the session."
+        modes = ", ".join(
+            f"{mode}x{count}"
+            for mode, count in sorted(self._stats["mode_counts"].items())
+        )
+        avg_conf = self._stats["confidence_sum"] / total
+        avg_dur = self._stats["duration_sum"] / total
+        return (
+            f"Session so far: {total} completed turn(s) ({modes}); "
+            f"average decoder confidence {avg_conf:.2f}; "
+            f"average turn duration {avg_dur:.1f}s."
+        )
+
+    def get_session_summary(self) -> str:
+        """One-line rolling summary covering ALL turns this session."""
+        with self._lock:
+            return self._summary_locked()
+
+    def get_enhanced_context(self, max_turns: int = 3) -> list[dict]:
+        """Richer context for the LLM (Phase 2).
+
+        Combines: whole-session summary + latest EEG statistics + the most
+        recent turns verbatim. The summary is injected as a user/assistant
+        pair so the message list stays strictly alternating.
+
+        Args:
+            max_turns: How many recent turns to include verbatim.
+
+        Returns:
+            List of message dicts (role/content).
+        """
+        max_turns = max(1, int(max_turns))
+        with self._lock:
+            summary_text = f"[session context] {self._summary_locked()}"
+            if self._last_eeg_stats:
+                stats = self._last_eeg_stats
+                summary_text += (
+                    f" Latest EEG: mean confidence "
+                    f"{stats['mean_confidence']}."
+                )
+                if stats["intent_distribution"]:
+                    summary_text += (
+                        f" Intent distribution: "
+                        f"{stats['intent_distribution']}."
+                    )
+            recent = list(self._turns[-max_turns:])
+
+        context: list[dict] = [
+            {"role": "user", "content": summary_text},
+            {"role": "assistant",
+             "content": "Understood. I will factor this session context in."},
+        ]
+        for turn in recent:
+            context.append({
+                "role": "user",
+                "content": (
+                    f"[{turn.intent_mode}] "
+                    f"(confidence: {turn.intent_confidence:.2f})"
+                ),
+            })
+            context.append({
+                "role": "assistant",
+                "content": turn.final_response,
+            })
+        return context
 
     def check_timeout(self) -> bool:
         """

@@ -45,10 +45,17 @@ _DEFAULT_CONFIG = {
         'ollama': {'model': 'qwen2.5:7b', 'host': 'http://localhost:11434'},
         'api': {'url': '', 'key': '', 'model': 'gpt-4o-mini'},
         'coze': {'domain': '', 'project_id': '', 'poll_timeout': 120.0},
+        'deepseek': {
+            'flash_model': 'deepseek-chat',      # peak hours (cheap tier)
+            'pro_model': 'deepseek-reasoner',    # off-peak (strong tier)
+        },
+        'cache': {'enabled': True, 'maxsize': 64, 'ttl': 300.0},
     },
     'feedback': {
         'host': '127.0.0.1',
         'port': 8080,
+        'eeg_downsample': 2,   # push every Nth EEG sample to the UI (1 = off)
+        'audio': {'enabled': True},
     },
 }
 

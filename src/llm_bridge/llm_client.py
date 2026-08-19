@@ -25,6 +25,8 @@ import json
 import os
 import time
 import logging
+import threading
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -677,25 +679,149 @@ class MockLLMClient(LLMClient):
         return selected_response + "\n\n[Mock expansion: This would be elaborated by the LLM with more detail and context.]"
 
 
-def create_llm_client(backend: str = "ollama", **kwargs) -> LLMClient:
+class CachedLLMClient(LLMClient):
+    """Caching decorator around any LLMClient (Phase 3 performance).
+
+    Repeated identical requests (same intent mode, context, candidate
+    count and topic hint) within the TTL return a cached copy without
+    hitting the backend. Handy for demos where the same intent fires
+    again and again.
+
+    Error placeholder responses (e.g. "[API Error: ...]") are never
+    cached. Thread-safe: guarded by a lock, safe to share with the
+    AsyncLLMBridge worker thread.
+    """
+
+    def __init__(self, inner: LLMClient, maxsize: int = 64, ttl: float = 300.0,
+                 clock=None):
+        """
+        Args:
+            inner: The wrapped LLMClient.
+            maxsize: Maximum number of cached entries (LRU eviction).
+            ttl: Seconds until a cached entry expires.
+            clock: Injectable time function for tests.
+        """
+        self.inner = inner
+        self._maxsize = max(1, int(maxsize))
+        self._ttl = float(ttl)
+        self._clock = clock or time.time
+        self._lock = threading.Lock()
+        self._cache: "OrderedDict[tuple, tuple[float, object]]" = OrderedDict()
+        self._hits = 0
+        self._misses = 0
+
+    @staticmethod
+    def _freeze(messages: list[dict]) -> tuple:
+        """Make a hashable fingerprint of a message list."""
+        return tuple(
+            (m.get("role", ""), m.get("content", "")) for m in messages
+        )
+
+    @staticmethod
+    def _cacheable(candidates: list[str]) -> bool:
+        """Error placeholder responses must not poison the cache."""
+        if not candidates:
+            return False
+        bad = ("[API Error", "[LLM Error", "[Error:", "LLM offline")
+        return not any(any(marker in c for marker in bad) for c in candidates)
+
+    def _lookup(self, key: tuple):
+        now = self._clock()
+        with self._lock:
+            item = self._cache.get(key)
+            if item is not None:
+                expires_at, value = item
+                if now < expires_at:
+                    self._hits += 1
+                    return list(value) if isinstance(value, list) else value
+                del self._cache[key]
+            self._misses += 1
+            return None
+
+    def _store(self, key: tuple, value) -> None:
+        with self._lock:
+            self._cache[key] = (self._clock() + self._ttl, value)
+            while len(self._cache) > self._maxsize:
+                self._cache.popitem(last=False)
+
+    def generate_candidates(
+        self,
+        intent_mode: str,
+        context: list[dict],
+        n_candidates: int = 3,
+        topic_hint: str = "",
+    ) -> list[str]:
+        """Cached variant of inner.generate_candidates()."""
+        key = ("gen", intent_mode, n_candidates, topic_hint,
+               self._freeze(context))
+        cached = self._lookup(key)
+        if cached is not None:
+            logger.debug("LLM cache hit for mode=%s", intent_mode)
+            return cached
+        result = self.inner.generate_candidates(
+            intent_mode, context, n_candidates, topic_hint
+        )
+        if self._cacheable(result):
+            self._store(key, list(result))
+        return result
+
+    def is_available(self) -> bool:
+        return self.inner.is_available()
+
+    def expand_response(self, selected_response: str, intent_mode: str,
+                        context: list[dict]) -> str:
+        """Cached variant of inner.expand_response()."""
+        key = ("exp", selected_response, intent_mode, self._freeze(context))
+        cached = self._lookup(key)
+        if cached is not None:
+            return cached
+        result = self.inner.expand_response(selected_response, intent_mode, context)
+        if result and "[API Error" not in result and "[LLM Error" not in result:
+            self._store(key, result)
+        return result
+
+    def cache_stats(self) -> dict:
+        """Return cache counters (hits/misses/size) for logging."""
+        with self._lock:
+            return {
+                "hits": self._hits,
+                "misses": self._misses,
+                "size": len(self._cache),
+                "maxsize": self._maxsize,
+                "ttl": self._ttl,
+            }
+
+    def clear_cache(self) -> None:
+        """Drop all cached entries."""
+        with self._lock:
+            self._cache.clear()
+
+
+def create_llm_client(backend: str = "ollama", cache: bool = False,
+                      **kwargs) -> LLMClient:
     """Factory function to create LLM client.
 
     Args:
-        backend: 'ollama', 'api', or 'mock'.
+        backend: 'ollama', 'api', 'coze' or 'mock'.
+        cache: Wrap the client in CachedLLMClient (skipped for 'mock').
         **kwargs: Backend-specific arguments.
 
     Returns:
         LLMClient instance.
     """
     if backend == "ollama":
-        return OllamaClient(**kwargs)
+        client = OllamaClient(**kwargs)
     elif backend == "api":
-        return APIClient(**kwargs)
+        client = APIClient(**kwargs)
     elif backend == "coze":
-        return CozeClient(**kwargs)
+        client = CozeClient(**kwargs)
     elif backend == "mock":
-        return MockLLMClient(**kwargs)
+        client = MockLLMClient(**kwargs)
     else:
         raise ValueError(
             f"Unknown backend: {backend}. Use 'ollama', 'api', 'coze', or 'mock'."
         )
+    if cache and backend != "mock":
+        return CachedLLMClient(client)
+    return client
+

@@ -304,3 +304,78 @@ class TestThreadSafety:
 
         assert len(errors) == 0
         assert len(read_results) == 50
+
+
+class TestEnhancedContext:
+    """Phase 2: session summary + EEG stats + enhanced context."""
+
+    @staticmethod
+    def _run_turn(cm, mode="query", conf=0.8, response="answer"):
+        cm.start_turn(mode, conf)
+        cm.set_candidates([response, "other"])
+        return cm.select_candidate(0)
+
+    def test_summary_empty_session(self):
+        cm = ContextManager()
+        assert cm.get_session_summary() == "First turn of the session."
+
+    def test_summary_counts_all_turns(self):
+        cm = ContextManager()
+        self._run_turn(cm, mode="query", conf=0.8)
+        self._run_turn(cm, mode="reason", conf=0.6)
+        summary = cm.get_session_summary()
+        assert "2 completed turn(s)" in summary
+        assert "queryx1" in summary and "reasonx1" in summary
+        assert "average decoder confidence 0.70" in summary
+
+    def test_summary_survives_turn_trimming(self):
+        cm = ContextManager()
+        for i in range(5):
+            self._run_turn(cm, mode="query", conf=0.5)
+        assert len(cm.turns) == cm.MAX_CONTEXT_TURNS  # list trimmed
+        assert "5 completed turn(s)" in cm.get_session_summary()  # stats kept
+
+    def test_record_eeg_stats_appears_in_context(self):
+        cm = ContextManager()
+        cm.record_eeg_stats(
+            mean_confidence=0.86,
+            intent_distribution={"left_hand": 0.6, "rest": 0.2},
+        )
+        ctx = cm.get_enhanced_context()
+        text = ctx[0]["content"]
+        assert "mean confidence 0.86" in text
+        assert "left_hand" in text
+
+    def test_enhanced_context_alternates_roles(self):
+        cm = ContextManager()
+        self._run_turn(cm, mode="query", conf=0.9, response="first")
+        self._run_turn(cm, mode="reason", conf=0.7, response="second")
+        ctx = cm.get_enhanced_context()
+        roles = [m["role"] for m in ctx]
+        # Strictly alternating user/assistant starting with user.
+        assert roles == ["user", "assistant"] * (len(roles) // 2)
+
+    def test_enhanced_context_includes_recent_turns(self):
+        cm = ContextManager()
+        self._run_turn(cm, mode="query", conf=0.9, response="first")
+        self._run_turn(cm, mode="reason", conf=0.7, response="second")
+        ctx = cm.get_enhanced_context()
+        contents = " | ".join(m["content"] for m in ctx)
+        assert "first" in contents and "second" in contents
+
+    def test_enhanced_context_max_turns_limit(self):
+        cm = ContextManager()
+        for i in range(4):
+            self._run_turn(cm, mode="query", conf=0.5, response=f"r{i}")
+        ctx = cm.get_enhanced_context(max_turns=2)
+        contents = " | ".join(m["content"] for m in ctx)
+        assert "r3" in contents and "r2" in contents
+        assert "r0" not in contents and "r1" not in contents
+        # 1 summary pair + 2 turn pairs = 6 messages.
+        assert len(ctx) == 6
+
+    def test_enhanced_context_empty_session(self):
+        cm = ContextManager()
+        ctx = cm.get_enhanced_context()
+        assert len(ctx) == 2  # only the summary pair
+        assert "First turn" in ctx[0]["content"]

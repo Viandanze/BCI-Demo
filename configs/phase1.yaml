@@ -46,8 +46,18 @@ llm:
     url: ""                 # e.g. https://api.deepseek.com/v1
     key: ""                 # your API key
     model: gpt-4o-mini      # model name
+  deepseek:                 # used by DeepSeekClient (cost-aware switching)
+    flash_model: deepseek-chat      # cheap tier, peak hours 09-12 / 14-18
+    pro_model: deepseek-reasoner    # strong tier, used off-peak
+  cache:                    # LLM response cache (identical request -> memory)
+    enabled: true
+    maxsize: 64
+    ttl: 300.0               # seconds
 
 # Visual feedback server
 feedback:
   host: 127.0.0.1
   port: 8080
+  eeg_downsample: 2        # push every Nth EEG sample to the UI (1 = off)
+  audio:
+    enabled: true          # beep cues for intent / candidates / selection

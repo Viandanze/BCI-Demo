@@ -22,6 +22,7 @@ from src.llm_bridge.llm_client import (
     OllamaClient,
     APIClient,
     CozeClient,
+    CachedLLMClient,
     create_llm_client,
 )
 
@@ -396,3 +397,136 @@ class TestCreateLLMClientCoze:
         client = create_llm_client("coze")
         assert isinstance(client, CozeClient)
         assert not client.is_available()
+
+
+class CountingClient(LLMClient):
+    """Deterministic inner client that counts backend calls."""
+
+    def __init__(self, candidates=None):
+        self.calls = 0
+        self._candidates = candidates or ["alpha", "beta", "gamma"]
+
+    def generate_candidates(self, intent_mode, context, n_candidates=3,
+                            topic_hint=""):
+        self.calls += 1
+        return list(self._candidates)
+
+    def is_available(self):
+        return True
+
+    def expand_response(self, selected_response, intent_mode, context):
+        self.calls += 1
+        return f"expanded::{selected_response}"
+
+
+class TestCachedLLMClient:
+    """Phase 3 response cache."""
+
+    def test_identical_request_hits_cache(self):
+        inner = CountingClient()
+        cached = CachedLLMClient(inner)
+        ctx = [{"role": "user", "content": "hi"}]
+        r1 = cached.generate_candidates("query", ctx)
+        r2 = cached.generate_candidates("query", ctx)
+        assert inner.calls == 1
+        assert r1 == r2
+
+    def test_different_args_miss_cache(self):
+        inner = CountingClient()
+        cached = CachedLLMClient(inner)
+        cached.generate_candidates("query", [])
+        cached.generate_candidates("reason", [])       # different mode
+        cached.generate_candidates("query", [], n_candidates=5)  # different n
+        assert inner.calls == 3
+
+    def test_returned_list_is_a_copy(self):
+        inner = CountingClient()
+        cached = CachedLLMClient(inner)
+        r1 = cached.generate_candidates("query", [])
+        r1.append("polluted")
+        r2 = cached.generate_candidates("query", [])
+        assert r2 == ["alpha", "beta", "gamma"]
+
+    def test_ttl_expiry_forces_backend_call(self):
+        fake_now = [1000.0]
+        inner = CountingClient()
+        cached = CachedLLMClient(inner, ttl=10.0, clock=lambda: fake_now[0])
+        cached.generate_candidates("query", [])
+        fake_now[0] += 11.0  # past the TTL
+        cached.generate_candidates("query", [])
+        assert inner.calls == 2
+
+    def test_error_placeholders_not_cached(self):
+        inner = CountingClient(candidates=["[API Error: boom]"])
+        cached = CachedLLMClient(inner)
+        cached.generate_candidates("query", [])
+        cached.generate_candidates("query", [])
+        assert inner.calls == 2
+
+    def test_ollama_offline_placeholder_not_cached(self):
+        inner = CountingClient(
+            candidates=["[Error: Ollama not connected. Run 'ollama serve' first.]"]
+        )
+        cached = CachedLLMClient(inner)
+        cached.generate_candidates("query", [])
+        cached.generate_candidates("query", [])
+        assert inner.calls == 2
+
+    def test_expand_response_cached(self):
+        inner = CountingClient()
+        cached = CachedLLMClient(inner)
+        ctx = [{"role": "user", "content": "ctx"}]
+        e1 = cached.expand_response("pick me", "query", ctx)
+        e2 = cached.expand_response("pick me", "query", ctx)
+        assert e1 == "expanded::pick me"
+        assert inner.calls == 1
+        assert e1 == e2
+
+    def test_is_available_delegates(self):
+        cached = CachedLLMClient(CountingClient())
+        assert cached.is_available() is True
+
+    def test_cache_stats_and_clear(self):
+        inner = CountingClient()
+        cached = CachedLLMClient(inner)
+        cached.generate_candidates("query", [])   # miss
+        cached.generate_candidates("query", [])   # hit
+        stats = cached.cache_stats()
+        assert stats["hits"] == 1
+        assert stats["misses"] == 1
+        assert stats["size"] == 1
+        cached.clear_cache()
+        assert cached.cache_stats()["size"] == 0
+
+    def test_lru_eviction_respects_maxsize(self):
+        inner = CountingClient()
+        cached = CachedLLMClient(inner, maxsize=2)
+        for mode in ("a", "b", "c"):
+            cached.generate_candidates(mode, [])
+        assert cached.cache_stats()["size"] == 2
+        cached.generate_candidates("a", [])  # evicted -> backend again
+        assert inner.calls == 4
+
+
+class TestFactoryCacheFlag:
+    """create_llm_client(cache=...) wiring."""
+
+    def test_mock_is_never_wrapped(self):
+        client = create_llm_client("mock", cache=True)
+        assert isinstance(client, MockLLMClient)
+
+    def test_api_wrapped_when_cache_true(self):
+        client = create_llm_client(
+            "api", cache=True,
+            api_url="https://api.example.com/v1", api_key="k",
+        )
+        assert isinstance(client, CachedLLMClient)
+        assert isinstance(client.inner, APIClient)
+
+    def test_api_not_wrapped_by_default(self):
+        client = create_llm_client(
+            "api",
+            api_url="https://api.example.com/v1", api_key="k",
+        )
+        assert isinstance(client, APIClient)
+
