@@ -1,5 +1,7 @@
 # NeuroDecode - EEG Motor Imagery Decoding System
 
+[![Tests](https://github.com/Viandanze/NeuroDecode/actions/workflows/tests.yml/badge.svg)](https://github.com/Viandanze/NeuroDecode/actions/workflows/tests.yml)
+
 A comprehensive toolkit for EEG-based Motor Imagery classification, implementing deep learning, classical ML, and ensemble approaches with real-time BrainFlow streaming support.
 
 ##  Project Overview
@@ -24,6 +26,29 @@ This project provides complete implementations of:
 | Ensemble Voting(soft) | train/test split | 79.29% | EEGNet+Conformer+TCN |
 | **Ensemble Stacking(tangent)** | **train/test split** | **82.14%** | **Cohen's Kappa 0.537** |
 | Riemannian MDM | single subject | 73.63% | |
+
+##  System Architecture
+
+```mermaid
+flowchart LR
+    subgraph ACQ["Data Acquisition"]
+        BF["BrainFlow Board<br/>(Synthetic / Ganglion / Cyton)"] --> SM["EEGStreamManager<br/>rolling 200 ms windows"]
+    end
+    SM --> MD["MockDecoder"]
+    SM --> RD["RealDecoder<br/>(lazy-loaded EEGNet)"]
+    MD --> IE["IntentEncoder<br/>MI intent → cognitive mode"]
+    RD --> IE
+    IE --> CM["ContextManager<br/>state machine + dialogue context"]
+    CM --> LC["LLMClient"]
+    subgraph LLM["LLM Backends (pluggable)"]
+        LC --> OL["Ollama (local)"]
+        LC --> DS["OpenAI-compatible API<br/>DeepSeek + off-peak scheduler"]
+        LC --> MK["Mock"]
+    end
+    LC --> AF["AudioFeedback<br/>(cross-platform TTS)"]
+    LC --> VF["VisualFeedback<br/>(SSE dashboard:<br/>pre-serialized + downsampled)"]
+    VF --> BR["Browser<br/>real-time EEG + chat"]
+```
 
 ##  Project Structure
 
@@ -432,6 +457,34 @@ Current coverage: 86%+ across intent encoder, context manager, LLM client, confi
 | LLMClient | `src/llm_bridge/llm_client.py` | Pluggable LLM backend: Ollama / OpenAI-compatible API / Coze agent / Mock |
 | VisualFeedback | `src/feedback/visual_feedback.py` | Flask + SSE real-time web UI with EEG waveform + candidate cards |
 | Demo | `scripts/collaborative_reasoning_demo.py` | Main entry point, orchestrates full collaborative reasoning pipeline |
+
+---
+
+## ⚡ Performance (Phase 3)
+
+Measured on the real code path (`VisualFeedback.update_eeg`) with
+`scripts/bench_feedback.py` — Windows 11, i7-14650HX, 2026-08-19.
+
+**EEG batch producer throughput** (8-channel windows):
+
+| Window size | Downsample ×1 | Downsample ×4 | Speedup |
+|---|---|---|---|
+| 32 × 8ch | 18,369 ev/s | 59,195 ev/s | 3.2× |
+| 256 × 8ch | 2,508 ev/s | 9,673 ev/s | 3.9× |
+| 512 × 8ch | 1,251 ev/s | 4,962 ev/s | 4.0× |
+
+**SSE payload serialization** (256-sample window, per event):
+
+| Concurrent clients | Naive (serialize per client) | Pre-serialized (serialize once) | Speedup |
+|---|---|---|---|
+| 1 | 403.3 µs | 408.8 µs | ~1.0× |
+| 2 | 788.7 µs | 394.1 µs | 2.0× |
+| 5 | 1,968.5 µs | 394.5 µs | 5.0× |
+
+**Network payload**: downsample ×4 shrinks each EEG batch event by **74.9%**
+(17,287 B → 4,343 B for a 256-sample window).
+
+Reproduce with: `python scripts/bench_feedback.py`
 
 ---
 
