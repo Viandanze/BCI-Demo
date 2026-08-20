@@ -1,7 +1,5 @@
 # NeuroDecode × LLM — Collaborative Reasoning (Phase 1)
 
-> **Historical document** — Phase 1 era README. The project is now completed; see [README.md](README.md) for the final state.
-
 BCI-LLM collaborative reasoning system: decode motor imagery into cognitive intents, generate LLM candidates, and let the user select via a second BCI round.
 
 ## Architecture
