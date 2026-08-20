@@ -2,6 +2,8 @@
 
 [![Tests](https://github.com/Viandanze/NeuroDecode/actions/workflows/tests.yml/badge.svg)](https://github.com/Viandanze/NeuroDecode/actions/workflows/tests.yml)
 
+> **Status: Completed (2026-08)** — Final release. All planned phases delivered; CI 239/239 green at `b3d2c73`.
+
 A comprehensive toolkit for EEG-based Motor Imagery classification, implementing deep learning, classical ML, and ensemble approaches with real-time BrainFlow streaming support.
 
 ##  Project Overview
@@ -460,7 +462,7 @@ Current coverage: 86%+ across intent encoder, context manager, LLM client, confi
 
 ---
 
-## ⚡ Performance (Phase 3)
+## ⚡ Performance
 
 Measured on the real code path (`VisualFeedback.update_eeg`) with
 `scripts/bench_feedback.py` — Windows 11, i7-14650HX, 2026-08-19.
