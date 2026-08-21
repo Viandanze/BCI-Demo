@@ -6,25 +6,31 @@
 <title>NEURODECODE</title>
 <style>
   :root {
-    --bg: #0d1117;
-    --bg-card: #161b22;
-    --bg-deep: #010409;
-    --accent: #58a6ff;
-    --accent-dim: rgba(88, 166, 255, 0.6);
-    --accent-faint: rgba(88, 166, 255, 0.12);
-    --green: #3fb950;
-    --green-dim: rgba(63, 185, 80, 0.6);
-    --purple: #bc8cff;
-    --red: #f85149;
-    --text: #e6edf3;
-    --text-dim: #8b949e;
-    --text-mute: #484f58;
-    --border: rgba(240, 246, 252, 0.1);
-    --yellow: #58a6ff;
-    --yellow-dim: rgba(88, 166, 255, 0.6);
-    --yellow-faint: rgba(88, 166, 255, 0.12);
-    --cyan: #3fb950;
-    --cyan-dim: rgba(63, 185, 80, 0.6);
+    --bg: #07080d;
+    --bg-card: #0c0e16;
+    --bg-deep: #090b11;
+    --bg-hover: #121523;
+    --accent: #a78bfa;
+    --accent-strong: #8b5cf6;
+    --accent-dim: rgba(167, 139, 250, 0.6);
+    --accent-faint: rgba(167, 139, 250, 0.10);
+    --cyan: #22d3ee;
+    --cyan-dim: rgba(34, 211, 238, 0.65);
+    --cyan-faint: rgba(34, 211, 238, 0.10);
+    --green: #34d399;
+    --green-dim: rgba(52, 211, 153, 0.6);
+    --purple: #c084fc;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --text: #e8eaf2;
+    --text-dim: #9aa1b5;
+    --text-mute: #5c6274;
+    --border: rgba(148, 163, 184, 0.10);
+    --border-bright: rgba(148, 163, 184, 0.22);
+    --yellow: #a78bfa;
+    --yellow-dim: rgba(167, 139, 250, 0.6);
+    --yellow-faint: rgba(167, 139, 250, 0.12);
+    --mono: 'JetBrains Mono', 'Cascadia Code', 'SF Mono', Consolas, ui-monospace, monospace;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -38,6 +44,24 @@
     font-size: 13px;
     line-height: 1.6;
     overflow: hidden;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Ambient background: dot grid + aurora glow */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: radial-gradient(circle, rgba(167, 139, 250, 0.055) 1px, transparent 1px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 20%, transparent 100%);
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 20%, transparent 100%);
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 55% 38% at 72% -8%, rgba(139, 92, 246, 0.14), transparent 70%),
+      radial-gradient(ellipse 45% 32% at 18% -5%, rgba(34, 211, 238, 0.07), transparent 70%);
   }
 
   .app { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; }
@@ -45,51 +69,55 @@
   /* === Header === */
   header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 0 24px; height: 52px; flex-shrink: 0;
-    background: var(--bg-card);
+    padding: 0 24px; height: 54px; flex-shrink: 0;
+    background: rgba(12, 14, 22, 0.75);
+    backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
   }
-  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 13px; }
   .logo-mark {
-    width: 20px; height: 20px;
-    background: linear-gradient(135deg, #58a6ff, #1f6feb);
-    border-radius: 5px;
+    width: 26px; height: 26px; flex-shrink: 0;
+    filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.5));
   }
   .logo-text {
     font-size: 15px; font-weight: 700; letter-spacing: 3px;
     color: var(--text);
+    font-family: var(--mono);
+    background: linear-gradient(90deg, #e8eaf2 30%, #a78bfa 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
-  .logo-sub { font-size: 9px; color: var(--text-dim); letter-spacing: 4px; margin-top: -2px; }
+  .logo-sub { font-size: 8.5px; color: var(--text-mute); letter-spacing: 3.5px; margin-top: -1px; font-family: var(--mono); }
 
-  .header-right { display: flex; align-items: center; gap: 20px; }
-  .header-meta { display: flex; gap: 16px; font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+  .header-right { display: flex; align-items: center; gap: 22px; }
+  .header-meta { display: flex; gap: 16px; font-size: 10px; color: var(--text-dim); letter-spacing: 1px; font-family: var(--mono); }
   .header-meta b { color: var(--text); font-weight: 600; }
 
   .status-pill {
     display: flex; align-items: center; gap: 8px;
-    padding: 5px 14px; font-size: 10px; font-weight: 600; letter-spacing: 2px;
-    border-radius: 999px;
-    transition: all 0.3s;
+    padding: 5px 15px; font-size: 10px; font-weight: 600; letter-spacing: 2px;
+    border-radius: 999px; font-family: var(--mono);
+    transition: all 0.4s;
   }
   .status-dot { width: 6px; height: 6px; border-radius: 50%; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.8); } }
 
-  .st-idle { color: var(--text-dim); border: 1px solid var(--text-mute); }
+  .st-idle { color: var(--text-dim); border: 1px solid var(--border-bright); }
   .st-idle .status-dot { background: var(--text-dim); }
-  .st-detecting { color: var(--accent); border: 1px solid rgba(88,166,255,0.35); background: rgba(88,166,255,0.08); }
+  .st-detecting { color: var(--accent); border: 1px solid rgba(167,139,250,0.4); background: rgba(167,139,250,0.08); box-shadow: 0 0 16px rgba(139,92,246,0.15); }
   .st-detecting .status-dot { background: var(--accent); }
-  .st-intent_locked { color: var(--green); border: 1px solid rgba(63,185,80,0.4); background: rgba(63,185,80,0.08); }
+  .st-intent_locked { color: var(--green); border: 1px solid rgba(52,211,153,0.45); background: rgba(52,211,153,0.08); box-shadow: 0 0 16px rgba(52,211,153,0.15); }
   .st-intent_locked .status-dot { background: var(--green); }
-  .st-awaiting_llm { color: var(--purple); border: 1px solid rgba(188,140,255,0.35); background: rgba(188,140,255,0.07); }
+  .st-awaiting_llm { color: var(--purple); border: 1px solid rgba(192,132,252,0.4); background: rgba(192,132,252,0.07); box-shadow: 0 0 16px rgba(192,132,252,0.12); }
   .st-awaiting_llm .status-dot { background: var(--purple); }
-  .st-presenting_candidates { color: var(--green); border: 1px solid rgba(63,185,80,0.3); background: rgba(63,185,80,0.05); }
-  .st-presenting_candidates .status-dot { background: var(--green); }
-  .st-selecting { color: var(--accent); border: 1px solid rgba(88,166,255,0.35); background: rgba(88,166,255,0.08); }
-  .st-selecting .status-dot { background: var(--accent); }
-  .st-completed { color: var(--green); border: 1px solid rgba(63,185,80,0.25); }
-  .st-completed .status-dot { background: var(--green); }
+  .st-presenting_candidates { color: var(--cyan); border: 1px solid rgba(34,211,238,0.4); background: rgba(34,211,238,0.07); box-shadow: 0 0 16px rgba(34,211,238,0.12); }
+  .st-presenting_candidates .status-dot { background: var(--cyan); }
+  .st-selecting { color: var(--cyan); border: 1px solid rgba(34,211,238,0.35); background: rgba(34,211,238,0.06); }
+  .st-selecting .status-dot { background: var(--cyan); }
+  .st-completed { color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+  .st-completed .status-dot { background: var(--green); animation: none; }
 
-  /* === Main layout: 2 columns === */
+  /* === Main layout === */
   .main {
     flex: 1; display: grid;
     grid-template-columns: 1fr 300px;
@@ -102,81 +130,129 @@
 
   /* === Card base === */
   .card {
-    background: var(--bg-card);
+    background:
+      linear-gradient(180deg, rgba(148,163,184,0.035), rgba(148,163,184,0) 40%),
+      var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 16px 18px;
     position: relative;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 28px rgba(0,0,0,0.3);
   }
   .card-title {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 3px; font-weight: 700;
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 2.5px; font-weight: 700;
     color: var(--text-dim);
     margin-bottom: 12px;
     display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono);
+  }
+  .card-title > span:first-child::before {
+    content: '';
+    display: inline-block; width: 6px; height: 6px; margin-right: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    border-radius: 2px; vertical-align: 0px;
+    box-shadow: 0 0 6px rgba(139,92,246,0.5);
   }
   .card-badge {
-    font-size: 8px; padding: 2px 8px; color: var(--text-dim);
-    border: 1px solid var(--text-mute); border-radius: 999px; letter-spacing: 1px; font-weight: 400;
+    font-size: 8px; padding: 2px 9px; color: var(--text-dim);
+    border: 1px solid var(--border-bright); border-radius: 999px; letter-spacing: 1px; font-weight: 400;
+    font-family: var(--mono);
+    background: rgba(148,163,184,0.04);
   }
 
   /* === EEG Monitor === */
   .eeg-card { flex: 0 0 auto; }
+  .eeg-scope { position: relative; }
+  .eeg-scope::after {
+    content: '';
+    position: absolute; left: 1px; right: 1px; height: 70px; top: -70px;
+    background: linear-gradient(180deg, transparent, rgba(167,139,250,0.05), transparent);
+    animation: scan 7s linear infinite;
+    border-radius: 8px;
+    pointer-events: none;
+  }
+  @keyframes scan { from { top: -70px; } to { top: 100%; } }
   #eeg-canvas {
     width: 100%; height: 320px; display: block;
-    background: var(--bg);
+    background: linear-gradient(180deg, #0a0c13, #080a10);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 14px rgba(0,0,0,0.55), inset 0 0 44px rgba(139,92,246,0.03);
   }
   .eeg-footer {
     display: flex; justify-content: space-between; align-items: center;
     margin-top: 8px; font-size: 10px; color: var(--text-dim); letter-spacing: 1px;
+    font-family: var(--mono);
   }
   .eeg-channels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-  .ch-tag { font-size: 9px; padding: 1px 6px; font-weight: 600; border: 1px solid; border-radius: 3px; letter-spacing: 1px; }
+  .ch-tag { font-size: 9px; padding: 1px 7px; font-weight: 600; border: 1px solid; border-radius: 4px; letter-spacing: 1px; font-family: var(--mono); background: rgba(0,0,0,0.25); }
 
   /* === Intent Decoder === */
   .intent-card { flex: 0 0 auto; }
   .intent-display {
     display: flex; align-items: center; gap: 16px;
     padding: 14px 18px;
-    background: var(--bg-deep);
+    background:
+      radial-gradient(ellipse 60% 120% at 0% 50%, rgba(139,92,246,0.08), transparent 70%),
+      var(--bg-deep);
+    border: 1px solid var(--border);
     border-left: 3px solid var(--accent);
-    border-radius: 4px;
+    border-radius: 6px;
     margin-bottom: 10px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
   }
   .intent-icon { font-size: 24px; color: var(--accent); opacity: 0.5; }
-  .intent-text { font-size: 24px; font-weight: 700; letter-spacing: 2px; color: var(--text); }
-  .intent-text.active { color: var(--accent); }
+  .intent-text { font-size: 24px; font-weight: 700; letter-spacing: 2px; color: var(--text); font-family: var(--mono); }
+  .intent-text.active {
+    color: var(--accent);
+    text-shadow: 0 0 18px rgba(139,92,246,0.45);
+  }
   .intent-desc { font-size: 11px; color: var(--text-dim); margin-left: auto; text-align: right; }
 
   .intent-data { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 10px; }
   .data-item { }
-  .data-label { font-size: 9px; color: var(--text-mute); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
-  .data-value { font-size: 13px; font-weight: 600; color: var(--text); }
+  .data-label { font-size: 9px; color: var(--text-mute); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; font-family: var(--mono); }
+  .data-value { font-size: 13px; font-weight: 600; color: var(--text); font-family: var(--mono); }
   .data-value.yellow { color: var(--accent); }
-  .data-value.cyan { color: var(--green); }
+  .data-value.cyan { color: var(--cyan); }
 
   .conf-section { margin-top: 8px; }
-  .conf-label { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 4px; }
-  .conf-bar { height: 4px; background: var(--bg-deep); border-radius: 2px; overflow: hidden; }
-  .conf-fill { height: 100%; background: linear-gradient(90deg, #1f6feb, #58a6ff); transition: width 0.3s; width: 0%; }
+  .conf-label { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 4px; font-family: var(--mono); }
+  .conf-bar { height: 5px; background: var(--bg-deep); border-radius: 3px; overflow: hidden; border: 1px solid rgba(148,163,184,0.06); }
+  .conf-fill {
+    height: 100%; transition: width 0.4s ease; width: 0%;
+    background: linear-gradient(90deg, #6d5ae0, #a78bfa, #22d3ee, #a78bfa);
+    background-size: 200% 100%;
+    animation: flow 3s ease infinite;
+    box-shadow: 0 0 10px rgba(167,139,250,0.45);
+  }
+  @keyframes flow { 0%,100% { background-position: 0% 0; } 50% { background-position: 100% 0; } }
 
-  .prob-row { display: flex; gap: 3px; margin-top: 6px; height: 3px; border-radius: 2px; overflow: hidden; }
+  .prob-row { display: flex; gap: 3px; margin-top: 6px; height: 4px; border-radius: 2px; overflow: hidden; }
   .prob-seg { transition: width 0.3s; min-width: 0; }
-  .prob-labels { display: flex; gap: 3px; margin-top: 4px; font-size: 8px; color: var(--text-dim); letter-spacing: 1px; }
+  .prob-labels { display: flex; gap: 3px; margin-top: 4px; font-size: 8px; color: var(--text-dim); letter-spacing: 1px; font-family: var(--mono); }
   .prob-labels span { flex: 1; text-align: center; }
 
   /* === Pipeline visualizer === */
-  .pipeline { display: flex; align-items: center; gap: 4px; margin: 10px 0; }
+  .pipeline { display: flex; align-items: center; gap: 0; margin: 12px 0 10px; }
   .pipe-node {
-    flex: 1; text-align: center; padding: 5px 2px;
-    font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
-    border: 1px solid var(--text-mute); border-radius: 3px; color: var(--text-dim);
-    transition: all 0.3s;
+    flex: 1; text-align: center; padding: 6px 2px;
+    font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+    border: 1px solid var(--border-bright); border-radius: 6px; color: var(--text-mute);
+    transition: all 0.35s;
+    font-family: var(--mono);
+    position: relative;
+    background: var(--bg-deep);
   }
-  .pipe-node.active { color: var(--accent); border-color: rgba(88,166,255,0.4); background: rgba(88,166,255,0.08); }
-  .pipe-node.done { color: var(--green-dim); border-color: rgba(63,185,80,0.2); }
-  .pipe-arrow { color: var(--text-mute); font-size: 8px; }
+  .pipe-node.active {
+    color: var(--accent); border-color: rgba(167,139,250,0.5); background: rgba(167,139,250,0.10);
+    box-shadow: 0 0 14px rgba(139,92,246,0.18), inset 0 0 8px rgba(139,92,246,0.06);
+  }
+  .pipe-node.done { color: var(--cyan-dim); border-color: rgba(34,211,238,0.25); background: rgba(34,211,238,0.04); }
+  .pipe-link {
+    width: 14px; height: 1px; flex-shrink: 0;
+    background: linear-gradient(90deg, rgba(148,163,184,0.25), rgba(148,163,184,0.08));
+  }
 
   /* === Candidates === */
   .cand-card { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
@@ -189,48 +265,54 @@
     background: var(--bg-deep);
     border: 1px solid var(--border);
     border-left: 2px solid transparent;
-    border-radius: 6px;
-    padding: 12px 14px; cursor: pointer; transition: all 0.2s;
+    border-radius: 7px;
+    padding: 12px 14px; cursor: pointer; transition: all 0.25s;
+    position: relative;
   }
   .candidate:hover {
-    border-color: rgba(88, 166, 255, 0.35);
+    border-color: rgba(167, 139, 250, 0.4);
     border-left-color: var(--accent);
-    background: #10151c;
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px rgba(139,92,246,0.08);
   }
   .candidate.selected {
-    border-color: rgba(63, 185, 80, 0.4);
+    border-color: rgba(52, 211, 153, 0.45);
     border-left-color: var(--green);
-    background: #10151c;
+    background: var(--bg-hover);
+    box-shadow: 0 0 18px rgba(52,211,153,0.10);
   }
   .candidate.auto-selected {
-    border-color: rgba(88, 166, 255, 0.3);
+    border-color: rgba(167, 139, 250, 0.35);
     border-left-color: var(--accent);
-    background: #10151c;
+    background: var(--bg-hover);
+    box-shadow: 0 0 18px rgba(139,92,246,0.10);
   }
   .cand-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .cand-num { font-size: 10px; font-weight: 700; color: var(--accent); }
-  .cand-source { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
-  .cand-text { font-size: 11px; line-height: 1.6; color: var(--text); word-break: break-word; }
+  .cand-num { font-size: 10px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+  .cand-source { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; font-family: var(--mono); }
+  .cand-text { font-size: 11px; line-height: 1.65; color: var(--text); word-break: break-word; }
 
   /* === Right sidebar === */
   .metric-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 5px 0; font-size: 11px;
-    border-bottom: 1px solid rgba(240, 246, 252, 0.04);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+    font-family: var(--mono);
   }
   .metric-row:last-child { border-bottom: none; }
-  .metric-label { color: var(--text-dim); letter-spacing: 1px; }
+  .metric-label { color: var(--text-dim); letter-spacing: 1px; font-size: 10px; }
   .metric-value { color: var(--text); font-weight: 600; }
   .metric-value.yellow { color: var(--accent); }
-  .metric-value.cyan { color: var(--green); }
+  .metric-value.cyan { color: var(--cyan); }
 
   .stat-block { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; }
-  .stat-label { font-size: 9px; color: var(--text-mute); letter-spacing: 2px; text-transform: uppercase; }
-  .stat-val { font-size: 16px; font-weight: 700; color: var(--accent); }
-  .stat-val.cyan { color: var(--green); }
+  .stat-label { font-size: 9px; color: var(--text-mute); letter-spacing: 2px; text-transform: uppercase; font-family: var(--mono); }
+  .stat-val { font-size: 17px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+  .stat-val.cyan { color: var(--cyan); }
 
   .data-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
-  .data-tag { font-size: 8px; padding: 2px 5px; font-weight: 600; border: 1px solid; border-radius: 3px; letter-spacing: 1px; }
+  .data-tag { font-size: 8px; padding: 2px 6px; font-weight: 600; border: 1px solid; border-radius: 4px; letter-spacing: 1px; font-family: var(--mono); background: rgba(0,0,0,0.25); }
 
   .history-card { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   .history-list { flex: 1; overflow-y: auto; }
@@ -238,16 +320,16 @@
   .history-list::-webkit-scrollbar-track { background: transparent; }
   .history-list::-webkit-scrollbar-thumb { background: var(--text-mute); border-radius: 2px; }
   .history-item {
-    padding: 8px 0; border-bottom: 1px solid rgba(240, 246, 252, 0.04);
+    padding: 8px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.05);
     font-size: 10px; display: flex; gap: 8px;
   }
   .history-item:last-child { border-bottom: none; }
   .history-meta { min-width: 60px; flex-shrink: 0; }
-  .history-mode { font-size: 8px; font-weight: 700; color: var(--accent-dim); letter-spacing: 1px; }
-  .history-time { font-size: 8px; color: var(--text-mute); }
-  .history-response { color: var(--text-dim); line-height: 1.4; word-break: break-word; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .history-mode { font-size: 8px; font-weight: 700; color: var(--accent-dim); letter-spacing: 1px; font-family: var(--mono); }
+  .history-time { font-size: 8px; color: var(--text-mute); font-family: var(--mono); }
+  .history-response { color: var(--text-dim); line-height: 1.45; word-break: break-word; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
-  .empty { color: var(--text-mute); text-align: center; padding: 20px 0; font-size: 11px; letter-spacing: 1px; }
+  .empty { color: var(--text-mute); text-align: center; padding: 20px 0; font-size: 11px; letter-spacing: 1px; font-family: var(--mono); }
   .loading::after { content: '...'; animation: dots 1.2s steps(4) infinite; }
   @keyframes dots { 0%,20% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80%,100% { content: '...'; } }
 
@@ -255,8 +337,11 @@
   footer {
     display: flex; justify-content: space-between; align-items: center;
     padding: 0 24px; height: 28px; flex-shrink: 0;
-    background: var(--bg-deep); border-top: 1px solid var(--border);
+    background: rgba(9, 11, 17, 0.8);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
     font-size: 9px; color: var(--text-dim); letter-spacing: 1px;
+    font-family: var(--mono);
   }
   .blink { animation: blink 1.5s infinite; color: var(--green); }
   @keyframes blink { 50% { opacity: 0; } }
@@ -267,7 +352,16 @@
 
   <header>
     <div class="logo">
-      <div class="logo-mark"></div>
+      <svg class="logo-mark" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="26" y2="26">
+            <stop offset="0%" stop-color="#a78bfa"/>
+            <stop offset="100%" stop-color="#22d3ee"/>
+          </linearGradient>
+        </defs>
+        <rect x="1" y="1" width="24" height="24" rx="6" stroke="url(#lg)" stroke-width="1.4" opacity="0.55"/>
+        <path d="M5 13 L9 13 L11 6.5 L14 19.5 L16.5 9.5 L18 14.5 L19.5 13 L21 13" stroke="url(#lg)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
       <div>
         <div class="logo-text">NEURODECODE</div>
         <div class="logo-sub">BCI / LLM COLLABORATIVE REASONING</div>
@@ -296,7 +390,9 @@
           <span>EEG Signal Monitor</span>
           <span class="card-badge" id="latency">&mdash; ms</span>
         </div>
-        <canvas id="eeg-canvas"></canvas>
+        <div class="eeg-scope">
+          <canvas id="eeg-canvas"></canvas>
+        </div>
         <div class="eeg-footer">
           <span id="eeg-info">BrainFlow Synthetic Board</span>
           <span id="eeg-rate">250 Hz | 8ch | 2.0s rolling</span>
@@ -317,13 +413,13 @@
 
         <div class="pipeline" id="pipeline">
           <div class="pipe-node" id="pipe-1">ACQUIRE</div>
-          <span class="pipe-arrow">/</span>
+          <div class="pipe-link"></div>
           <div class="pipe-node" id="pipe-2">PREPROC</div>
-          <span class="pipe-arrow">/</span>
+          <div class="pipe-link"></div>
           <div class="pipe-node" id="pipe-3">DECODE</div>
-          <span class="pipe-arrow">/</span>
+          <div class="pipe-link"></div>
           <div class="pipe-node" id="pipe-4">LLM</div>
-          <span class="pipe-arrow">/</span>
+          <div class="pipe-link"></div>
           <div class="pipe-node" id="pipe-5">OUTPUT</div>
         </div>
 
@@ -381,12 +477,12 @@
         <div class="metric-row"><span class="metric-label">SAMPLE RATE</span><span class="metric-value">250 Hz</span></div>
         <div class="metric-row"><span class="metric-label">WINDOW</span><span class="metric-value">4.0s</span></div>
         <div class="data-tags">
-          <span class="data-tag" style="color:var(--accent);border-color:rgba(88,166,255,0.25)">Fz</span>
-          <span class="data-tag" style="color:var(--accent);border-color:rgba(88,166,255,0.25)">Cz</span>
-          <span class="data-tag" style="color:var(--accent);border-color:rgba(88,166,255,0.25)">Pz</span>
-          <span class="data-tag" style="color:var(--accent);border-color:rgba(88,166,255,0.25)">Oz</span>
-          <span class="data-tag" style="color:var(--green);border-color:rgba(63,185,80,0.35)">C3</span>
-          <span class="data-tag" style="color:var(--green);border-color:rgba(63,185,80,0.35)">C4</span>
+          <span class="data-tag" style="color:var(--accent);border-color:rgba(167,139,250,0.3)">Fz</span>
+          <span class="data-tag" style="color:var(--accent);border-color:rgba(167,139,250,0.3)">Cz</span>
+          <span class="data-tag" style="color:var(--accent);border-color:rgba(167,139,250,0.3)">Pz</span>
+          <span class="data-tag" style="color:var(--accent);border-color:rgba(167,139,250,0.3)">Oz</span>
+          <span class="data-tag" style="color:var(--cyan);border-color:rgba(34,211,238,0.3)">C3</span>
+          <span class="data-tag" style="color:var(--cyan);border-color:rgba(34,211,238,0.3)">C4</span>
         </div>
       </div>
 
@@ -421,14 +517,14 @@ const ctx = canvas.getContext('2d');
 let eegBuffer = [];
 const MAX_BUFFER = 500;
 const CHANNELS = 8;
-const CH_COLORS = ['#58a6ff','#bc8cff','#39c5cf','#3fb950','#58a6ff','#bc8cff','#39c5cf','#3fb950'];
+const CH_COLORS = ['#a78bfa','#22d3ee','#34d399','#f472b6','#a78bfa','#22d3ee','#34d399','#f472b6'];
 const CH_NAMES = ['Fz','Cz','Pz','Oz','C3','C4','T7','T8'];
 const MI_LABELS = ['Left Hand','Right Hand','Feet','Tongue'];
 const MI_SHORT = ['LH','RH','FT','TG'];
-const MI_COLORS = ['#58a6ff','#bc8cff','#39c5cf','#e3b341'];
+const MI_COLORS = ['#a78bfa','#22d3ee','#34d399','#fbbf24'];
 
 document.getElementById('eeg-channels').innerHTML = CH_NAMES.map((n, i) =>
-  '<span class="ch-tag" style="color:' + CH_COLORS[i] + ';border-color:' + CH_COLORS[i] + '20">' + n + '</span>'
+  '<span class="ch-tag" style="color:' + CH_COLORS[i] + ';border-color:' + CH_COLORS[i] + '35">' + n + '</span>'
 ).join('');
 document.getElementById('prob-labels').innerHTML = MI_LABELS.map(l => '<span>' + l + '</span>').join('');
 
@@ -462,7 +558,7 @@ function drawEEG(data) {
   ctx.clearRect(0, 0, w, h);
 
   // Grid
-  ctx.strokeStyle = 'rgba(240, 246, 252, 0.06)';
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
   ctx.lineWidth = 0.5;
   for (let i = 0; i <= CHANNELS; i++) {
     const y = (h / CHANNELS) * i;
@@ -476,8 +572,8 @@ function drawEEG(data) {
   if (!data || data.length === 0) {
     // Draw channel labels even without data
     const chH = h / CHANNELS;
-    ctx.font = '10px Inter, sans-serif';
-    ctx.fillStyle = 'rgba(230, 237, 243, 0.28)';
+    ctx.font = '10px "JetBrains Mono", Consolas, monospace';
+    ctx.fillStyle = 'rgba(232, 234, 242, 0.28)';
     for (let ch = 0; ch < CHANNELS; ch++) {
       ctx.fillText(CH_NAMES[ch], 4, chH * ch + chH / 2 + 4);
     }
@@ -493,15 +589,15 @@ function drawEEG(data) {
     const amp = chH * 0.38;
 
     // Channel label
-    ctx.font = '10px Inter, sans-serif';
+    ctx.font = '10px "JetBrains Mono", Consolas, monospace';
     ctx.fillStyle = CH_COLORS[ch] + '99';
     ctx.fillText(CH_NAMES[ch], 4, baseY + 4);
 
-    // Waveform
+    // Waveform with oscilloscope glow
     ctx.strokeStyle = CH_COLORS[ch];
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.5;
     ctx.shadowColor = CH_COLORS[ch];
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur = 6;
     ctx.beginPath();
     for (let i = 0; i < data.length; i++) {
       const x = labelW + i * stepX;
@@ -576,7 +672,7 @@ function updateState(data) {
     const probTotal = data.current_probabilities.reduce((s, p) => s + p, 0) || 1;
     probBars.innerHTML = MI_COLORS.map((c, i) => {
       const w = ((data.current_probabilities[i] || 0) / probTotal) * 100;
-      return '<div class="prob-seg" style="width:' + w + '%;background:' + c + ';box-shadow:0 0 3px ' + c + '"></div>';
+      return '<div class="prob-seg" style="width:' + w + '%;background:' + c + ';box-shadow:0 0 4px ' + c + '"></div>';
     }).join('');
   }
 
@@ -587,7 +683,7 @@ function updateState(data) {
     list.innerHTML = data.candidates.map((c, i) => {
       const hint = MI_LABELS[i] || 'Option ' + (i+1);
       const short = MI_SHORT[i] || ('O' + (i+1));
-      const color = MI_COLORS[i] || '#58a6ff';
+      const color = MI_COLORS[i] || '#a78bfa';
       return '<div class="candidate" data-index="' + i + '">' +
         '<div class="cand-header"><span class="cand-num">[' + (i + 1) + ']</span>' +
         '<span class="cand-source" style="color:' + color + '">BCI: ' + short + ' ' + hint + '</span></div>' +
