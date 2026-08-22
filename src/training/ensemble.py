@@ -6,7 +6,7 @@ This module provides a unified framework for combining multiple BCI models
 (EEGNet, CSP, Riemannian classifiers) to improve classification accuracy
 and robustness through ensemble learning.
 
-Author: BCI_Projects Team
+Author: Viandanze
 """
 
 import copy

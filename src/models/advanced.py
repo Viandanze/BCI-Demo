@@ -12,7 +12,7 @@ All models follow the same interface:
     - Output: logits (batch, n_classes)
     - Optional: feature vector for visualization/transfer
 
-Author: BCI_Projects
+Author: Viandanze
 """
 
 import math

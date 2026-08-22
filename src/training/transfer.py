@@ -8,7 +8,7 @@ Transfer Learning Module for EEG-based BCI
 3. Pretrain-Finetune流程
 4. Leave-One-Subject-Out评估
 
-Author: BCI_Projects
+Author: Viandanze
 """
 
 import os

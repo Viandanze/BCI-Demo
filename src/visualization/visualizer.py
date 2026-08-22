@@ -12,7 +12,7 @@ Features:
     - t-SNE feature visualization
     - CSP pattern topography
 
-Author: BCI_Projects
+Author: Viandanze
 """
 
 import os

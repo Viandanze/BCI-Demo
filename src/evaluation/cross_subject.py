@@ -10,7 +10,7 @@ Cross-Subject Evaluation Module
 5. 自适应权重
 6. 统计检验报告
 
-Author: BCI_Projects
+Author: Viandanze
 """
 
 import copy

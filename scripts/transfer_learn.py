@@ -15,7 +15,7 @@ Usage:
     python scripts/transfer_learn.py --mode pretrain_finetune --source_subjects 1-50 --target_subjects 51-55
     python scripts/transfer_learn.py --mode compare --output ./results/
 
-Author: BCI_Projects
+Author: Viandanze
 """
 
 import os

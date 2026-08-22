@@ -1,10 +1,10 @@
 """
-BCI_Projects - Motor Imagery BCI Analysis Package
+NeuroDecode - Motor Imagery BCI Analysis Package
 A complete toolkit for EEG-based Motor Imagery classification
 """
 
 __version__ = "1.0.0"
-__author__ = "UE5AssetAnalyzer Owner"
+__author__ = "Viandanze"
 
 from .data import loader, preprocessing
 from .models import eegnet, csp, riemann_mdm

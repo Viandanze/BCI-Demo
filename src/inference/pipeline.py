@@ -10,7 +10,7 @@ This module provides a complete real-time inference framework for online BCI sys
 - RealTimePipeline: Complete pipeline coordinating all components
 - MockDataStream: Simulated EEG data stream for testing
 
-Author: BCI_Projects Team
+Author: Viandanze
 """
 
 import copy
