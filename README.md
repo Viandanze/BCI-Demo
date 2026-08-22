@@ -4,6 +4,8 @@
 
 A comprehensive toolkit for EEG-based Motor Imagery classification, implementing deep learning, classical ML, and ensemble approaches with real-time BrainFlow streaming support.
 
+**Status: feature-complete.** All planned modules are implemented and validated (239 tests green on GitHub Actions CI); no further phases are planned.
+
 ##  Project Overview
 
 This project provides complete implementations of:
@@ -55,7 +57,7 @@ flowchart LR
 ```
 NeuroDecode/
 ├── src/                          # Core package
-│   ├── config.py                 # Phase 1: Configuration management (YAML + defaults)
+│   ├── config.py                 # Configuration management (YAML + defaults)
 │   ├── data/                      # Data loading and preprocessing
 │   │   ├── loader.py             # PhysioNet dataset loader
 │   │   └── preprocessing.py      # EEG preprocessing pipeline
@@ -66,10 +68,10 @@ NeuroDecode/
 │   │   ├── ensemble.py           # Voting & Stacking ensemble
 │   │   ├── csp.py                # CSP classifier
 │   │   └── riemann_mdm.py        # Riemannian MDM classifier
-│   ├── acquisition/              # Phase 1: Data acquisition
+│   ├── acquisition/              # Data acquisition (BrainFlow streaming)
 │   │   ├── brainflow_acquisition.py  # BrainFlow board wrapper (synthetic default)
 │   │   └── eeg_stream_manager.py     # Rolling-window EEG stream manager (200ms batch push)
-│   ├── decoders/                 # Phase 1: EEG decoders
+│   ├── decoders/                 # EEG decoders
 │   │   ├── mock_decoder.py       # Mock decoder for testing
 │   │   └── real_decoder.py       # EEGNet-based real decoder with auto-architecture inference
 │   ├── training/                 # Training utilities
@@ -79,12 +81,12 @@ NeuroDecode/
 │   │   └── pipeline.py           # StreamingBuffer + RealTimePipeline
 │   ├── evaluation/               # Metrics
 │   │   └── metrics.py            # Comprehensive evaluation
-│   ├── intent/                    # Phase 1: Intent encoding
+│   ├── intent/                    # Intent encoding
 │   │   ├── intent_encoder.py     # MI to cognitive mode mapping
 │   │   └── context_manager.py    # State machine + dialogue context
-│   ├── llm_bridge/               # Phase 1: LLM integration
+│   ├── llm_bridge/               # LLM integration
 │   │   └── llm_client.py         # Ollama/API/Mock pluggable backend
-│   ├── feedback/                 # Phase 1: Visual feedback
+│   ├── feedback/                 # Visual feedback
 │   │   └── visual_feedback.py    # Flask+SSE real-time web UI
 │   └── utils/                    # Utilities
 │       └── config.py             # Configuration management
@@ -97,7 +99,7 @@ NeuroDecode/
 │   └── test_decoders.py         # Decoder module tests
 ├── scripts/                      # Executable scripts
 │   ├── realtime_demo.py          # Real-time inference demo (mock stream)
-│   ├── collaborative_reasoning_demo.py  # Phase 1: BCI×LLM collaborative demo
+│   ├── collaborative_reasoning_demo.py  # BCI×LLM collaborative demo
 │   ├── realtime_demo.py          # Real-time pipeline demo
 │   ├── train_eegnet.py           # EEGNet training (with anti-collapse measures)
 │   ├── train_ensemble.py         # Ensemble training
@@ -108,7 +110,7 @@ NeuroDecode/
 ├── visualizations/               # Charts (CN + EN)
 ├── configs/                      # Configuration files
 │   ├── default.yaml              # Default training configuration
-│   └── phase1.yaml               # Phase 1 runtime configuration
+│   └── phase1.yaml               # Collaborative reasoning runtime config (legacy filename)
 ├── outputs/                      # Results and checkpoints
 ├── README.md                     # This file
 └── requirements.txt              # Python dependencies
@@ -243,7 +245,7 @@ Test architectural modifications:
 - SE Attention
 - Combined approaches
 
-### Anti-Collapse Measures (P1-3)
+### Anti-Collapse Measures
 
 The training script includes built-in measures to prevent prediction collapse:
 
@@ -256,9 +258,9 @@ The training script includes built-in measures to prevent prediction collapse:
 
 These measures work together to ensure balanced predictions across all MI classes.
 
-##  Phase 1: Collaborative Reasoning Module
+##  Collaborative Reasoning Module (BCI x LLM)
 
-NeuroDecode Phase 1 bridges BCI motor imagery decoding with LLM-powered collaborative reasoning. Instead of treating BCI as a keyboard (one label = one character), we map MI classes to high-level **cognitive modes**, leveraging the human brain's strength in rapid intuitive selection.
+NeuroDecode bridges BCI motor imagery decoding with LLM-powered collaborative reasoning. Instead of treating BCI as a keyboard (one label = one character), we map MI classes to high-level **cognitive modes**, leveraging the human brain's strength in rapid intuitive selection.
 
 ### Architecture
 
@@ -286,7 +288,7 @@ EEG Signal -> BrainFlow -> EEGNet Decoder -> IntentEncoder -> ContextManager
 ### Quick Start (Mock Mode - No Ollama Required)
 
 ```bash
-# Install Phase 1 dependencies
+# Install collaborative-reasoning dependencies
 pip install -r requirements_phase1.txt
 
 # Run collaborative reasoning demo with mock LLM
