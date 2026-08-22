@@ -27,8 +27,11 @@ class BrainFlowAcquisition:
             from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
             self.BoardShim = BoardShim
 
-            # Use synthetic board
-            self.board_id = BoardIds.SYNTHETIC_BOARD if hasattr(BoardIds, 'SYNTHETIC_BOARD') else board_id
+            # Default to the synthetic board unless a real board id is
+            # explicitly provided (e.g. BoardIds.GANGLION_BOARD.value)
+            if board_id is None or board_id == -1:
+                board_id = getattr(BoardIds, 'SYNTHETIC_BOARD', -1)
+            self.board_id = board_id
             self.params = BrainFlowInputParams()
             self.board = BoardShim(self.board_id, self.params)
             self.channel_names = BoardShim.get_eeg_names(self.board_id)

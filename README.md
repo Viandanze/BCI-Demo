@@ -13,9 +13,9 @@ This project provides complete implementations of:
 - **CSP** - Common Spatial Pattern (classical BCI approach)
 - **Riemannian MDM** - Covariance-based classification using Riemannian geometry
 - **Ensemble** - Voting & Stacking with tangent space features
-- **BrainFlow Real-Time Pipeline** - Hardware-agnostic streaming (Synthetic/Ganglion/Cyton)
+- **BrainFlow Real-Time Pipeline** - Streaming via BrainFlow; tested on the synthetic board, real board IDs pluggable
 
-### Verified Results (PhysioNet Motor Movement, 109 subjects, 64ch, 160Hz)
+### Verified Results (PhysioNet Motor Movement: 109-subject dataset, 64ch, 160Hz; results verified on an 8-subject subset)
 
 | Model | Evaluation | Accuracy | Notes |
 |-------|-----------|----------|-------|
@@ -32,7 +32,7 @@ This project provides complete implementations of:
 ```mermaid
 flowchart LR
     subgraph ACQ["Data Acquisition"]
-        BF["BrainFlow Board<br/>(Synthetic / Ganglion / Cyton)"] --> SM["EEGStreamManager<br/>rolling 200 ms windows"]
+        BF["BrainFlow Board<br/>(synthetic, tested)"] --> SM["EEGStreamManager<br/>rolling 200 ms windows"]
     end
     SM --> MD["MockDecoder"]
     SM --> RD["RealDecoder<br/>(lazy-loaded EEGNet)"]
@@ -67,7 +67,7 @@ NeuroDecode/
 │   │   ├── csp.py                # CSP classifier
 │   │   └── riemann_mdm.py        # Riemannian MDM classifier
 │   ├── acquisition/              # Phase 1: Data acquisition
-│   │   ├── brainflow_acquisition.py  # BrainFlow board wrapper (Synthetic/Ganglion/Cyton)
+│   │   ├── brainflow_acquisition.py  # BrainFlow board wrapper (synthetic default)
 │   │   └── eeg_stream_manager.py     # Rolling-window EEG stream manager (200ms batch push)
 │   ├── decoders/                 # Phase 1: EEG decoders
 │   │   ├── mock_decoder.py       # Mock decoder for testing
@@ -96,7 +96,7 @@ NeuroDecode/
 │   ├── test_eeg_stream_manager.py  # EEG stream manager tests
 │   └── test_decoders.py         # Decoder module tests
 ├── scripts/                      # Executable scripts
-│   ├── brainflow_realtime.py     # BrainFlow real-time streaming
+│   ├── realtime_demo.py          # Real-time inference demo (mock stream)
 │   ├── collaborative_reasoning_demo.py  # Phase 1: BCI×LLM collaborative demo
 │   ├── realtime_demo.py          # Real-time pipeline demo
 │   ├── train_eegnet.py           # EEGNet training (with anti-collapse measures)
@@ -202,17 +202,19 @@ python scripts/tune_eegnet.py --strategy B --full_search
 python scripts/tune_eegnet.py --strategy C --improvements batchnorm
 ```
 
-### 7. BrainFlow Real-Time Streaming
+### 7. Real-Time Inference Demo
 
 ```bash
-# Synthetic board (no hardware needed)
-python scripts/brainflow_realtime.py --duration 30
+# Simulated streaming data, no hardware needed
+python scripts/realtime_demo.py --mock --duration 60
 
-# Real hardware (requires device)
-python scripts/brainflow_realtime.py --board ganglion    # OpenBCI Ganglion
-python scripts/brainflow_realtime.py --board cyton       # OpenBCI Cyton
-python scripts/brainflow_realtime.py --board cerelog     # Cerelog ESP-EEG
+# Real-time predictions with a trained model
+python scripts/realtime_demo.py --model_path models/eegnet.pt --duration 120
 ```
+
+For hardware acquisition, `BrainFlowAcquisition` accepts a BrainFlow board ID
+(defaults to the synthetic board; real boards such as Ganglion/Cyton can be
+selected programmatically once the device is connected).
 
 Supports 8 channels at 250Hz, sliding window inference (4s window, 0.5s step). Switch hardware by changing `--board` parameter only.
 
@@ -441,14 +443,14 @@ All secrets live in `.env` (git-ignored); `.env.example` documents every key.
 pytest tests/ -v
 ```
 
-Current coverage: 86%+ across intent encoder, context manager, LLM client, config, EEG stream manager, and decoder modules.
+The suite covers intent encoder, context manager, LLM client, config, EEG stream manager, and decoder modules (239 tests passing).
 
 ### Modules
 
 | Module | File | Description |
 |--------|------|-------------|
 | Config | `src/config.py` | YAML + defaults deep-merge configuration management |
-| BrainFlowAcquisition | `src/acquisition/brainflow_acquisition.py` | BrainFlow board wrapper (Synthetic/Ganglion/Cyton) |
+| BrainFlowAcquisition | `src/acquisition/brainflow_acquisition.py` | BrainFlow board wrapper (synthetic default, pluggable board IDs) |
 | EEGStreamManager | `src/acquisition/eeg_stream_manager.py` | Rolling-window EEG stream manager (200ms batch push, OOP design) |
 | MockDecoder | `src/decoders/mock_decoder.py` | Mock EEG decoder for testing without trained model |
 | RealDecoder | `src/decoders/real_decoder.py` | EEGNet-based decoder with auto-architecture inference + 5-step preprocessing |
