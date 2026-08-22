@@ -34,89 +34,88 @@ This project provides complete implementations of:
 ```mermaid
 flowchart LR
     subgraph ACQ["Data Acquisition"]
-        BF["BrainFlow Board<br/>(synthetic, tested)"] --> SM["EEGStreamManager<br/>rolling 200 ms windows"]
+        BF["BrainFlow Board - synthetic tested"] --> SM["EEGStreamManager - rolling 200 ms windows"]
     end
     SM --> MD["MockDecoder"]
-    SM --> RD["RealDecoder<br/>(lazy-loaded EEGNet)"]
-    MD --> IE["IntentEncoder<br/>MI intent → cognitive mode"]
+    SM --> RD["RealDecoder - lazy-loaded EEGNet"]
+    MD --> IE["IntentEncoder - MI intent to cognitive mode"]
     RD --> IE
-    IE --> CM["ContextManager<br/>state machine + dialogue context"]
+    IE --> CM["ContextManager - state machine + dialogue context"]
     CM --> LC["LLMClient"]
-    subgraph LLM["LLM Backends (pluggable)"]
-        LC --> OL["Ollama (local)"]
-        LC --> DS["OpenAI-compatible API<br/>DeepSeek + off-peak scheduler"]
+    subgraph LLM["LLM Backends pluggable"]
+        LC --> OL["Ollama local"]
+        LC --> DS["OpenAI-compatible API - DeepSeek with off-peak scheduler"]
         LC --> MK["Mock"]
     end
-    LC --> AF["AudioFeedback<br/>(cross-platform TTS)"]
-    LC --> VF["VisualFeedback<br/>(SSE dashboard:<br/>pre-serialized + downsampled)"]
-    VF --> BR["Browser<br/>real-time EEG + chat"]
+    LC --> AF["AudioFeedback - cross-platform TTS"]
+    LC --> VF["VisualFeedback - SSE dashboard - pre-serialized and downsampled"]
+    VF --> BR["Browser - real-time EEG and chat"]
 ```
 
 ##  Project Structure
 
 ```
 NeuroDecode/
-├── src/                          # Core package
-│   ├── config.py                 # Configuration management (YAML + defaults)
-│   ├── data/                      # Data loading and preprocessing
-│   │   ├── loader.py             # PhysioNet dataset loader
-│   │   └── preprocessing.py      # EEG preprocessing pipeline
-│   ├── models/                    # ML models
-│   │   ├── eegnet.py             # EEGNet v2 implementation
-│   │   ├── conformer.py          # Conformer model
-│   │   ├── tcn.py                # TCN model
-│   │   ├── ensemble.py           # Voting & Stacking ensemble
-│   │   ├── csp.py                # CSP classifier
-│   │   └── riemann_mdm.py        # Riemannian MDM classifier
-│   ├── acquisition/              # Data acquisition (BrainFlow streaming)
-│   │   ├── brainflow_acquisition.py  # BrainFlow board wrapper (synthetic default)
-│   │   └── eeg_stream_manager.py     # Rolling-window EEG stream manager (200ms batch push)
-│   ├── decoders/                 # EEG decoders
-│   │   ├── mock_decoder.py       # Mock decoder for testing
-│   │   └── real_decoder.py       # EEGNet-based real decoder with auto-architecture inference
-│   ├── training/                 # Training utilities
-│   │   ├── trainer.py            # Unified training loop
-│   │   └── augment.py            # Data augmentation (6 methods)
-│   ├── inference/                # Real-time inference
-│   │   └── pipeline.py           # StreamingBuffer + RealTimePipeline
-│   ├── evaluation/               # Metrics
-│   │   └── metrics.py            # Comprehensive evaluation
-│   ├── intent/                    # Intent encoding
-│   │   ├── intent_encoder.py     # MI to cognitive mode mapping
-│   │   └── context_manager.py    # State machine + dialogue context
-│   ├── llm_bridge/               # LLM integration
-│   │   └── llm_client.py         # Ollama/API/Mock pluggable backend
-│   ├── feedback/                 # Visual feedback
-│   │   └── visual_feedback.py    # Flask+SSE real-time web UI
-│   └── utils/                    # Utilities
-│       └── config.py             # Configuration management
-├── tests/                       # Unit tests
-│   ├── test_intent_encoder.py   # Intent encoder tests
-│   ├── test_context_manager.py  # Context manager tests
-│   ├── test_llm_client.py       # LLM client tests
-│   ├── test_config.py           # Config module tests
-│   ├── test_eeg_stream_manager.py  # EEG stream manager tests
-│   └── test_decoders.py         # Decoder module tests
-├── scripts/                      # Executable scripts
-│   ├── realtime_demo.py          # Real-time inference demo (mock stream)
-│   ├── collaborative_reasoning_demo.py  # BCI×LLM collaborative demo
-│   ├── realtime_demo.py          # Real-time pipeline demo
-│   ├── train_eegnet.py           # EEGNet training (with anti-collapse measures)
-│   ├── train_ensemble.py         # Ensemble training
-│   ├── train_csp.py              # CSP training
-│   ├── train_riemann.py          # Riemannian training
-│   ├── compare_models.py         # Model comparison
-│   └── tune_eegnet.py            # Hyperparameter tuning
-├── visualizations/               # Charts (CN + EN)
-├── configs/                      # Configuration files
-│   ├── default.yaml              # Default training configuration
-│   └── phase1.yaml               # Collaborative reasoning runtime config (legacy filename)
-├── outputs/                      # Results and checkpoints
-├── README.md                     # This file
-└── requirements.txt              # Python dependencies
+鈹溾攢鈹€ src/                          # Core package
+鈹?  鈹溾攢鈹€ config.py                 # Configuration management (YAML + defaults)
+鈹?  鈹溾攢鈹€ data/                      # Data loading and preprocessing
+鈹?  鈹?  鈹溾攢鈹€ loader.py             # PhysioNet dataset loader
+鈹?  鈹?  鈹斺攢鈹€ preprocessing.py      # EEG preprocessing pipeline
+鈹?  鈹溾攢鈹€ models/                    # ML models
+鈹?  鈹?  鈹溾攢鈹€ eegnet.py             # EEGNet v2 implementation
+鈹?  鈹?  鈹溾攢鈹€ conformer.py          # Conformer model
+鈹?  鈹?  鈹溾攢鈹€ tcn.py                # TCN model
+鈹?  鈹?  鈹溾攢鈹€ ensemble.py           # Voting & Stacking ensemble
+鈹?  鈹?  鈹溾攢鈹€ csp.py                # CSP classifier
+鈹?  鈹?  鈹斺攢鈹€ riemann_mdm.py        # Riemannian MDM classifier
+鈹?  鈹溾攢鈹€ acquisition/              # Data acquisition (BrainFlow streaming)
+鈹?  鈹?  鈹溾攢鈹€ brainflow_acquisition.py  # BrainFlow board wrapper (synthetic default)
+鈹?  鈹?  鈹斺攢鈹€ eeg_stream_manager.py     # Rolling-window EEG stream manager (200ms batch push)
+鈹?  鈹溾攢鈹€ decoders/                 # EEG decoders
+鈹?  鈹?  鈹溾攢鈹€ mock_decoder.py       # Mock decoder for testing
+鈹?  鈹?  鈹斺攢鈹€ real_decoder.py       # EEGNet-based real decoder with auto-architecture inference
+鈹?  鈹溾攢鈹€ training/                 # Training utilities
+鈹?  鈹?  鈹溾攢鈹€ trainer.py            # Unified training loop
+鈹?  鈹?  鈹斺攢鈹€ augment.py            # Data augmentation (6 methods)
+鈹?  鈹溾攢鈹€ inference/                # Real-time inference
+鈹?  鈹?  鈹斺攢鈹€ pipeline.py           # StreamingBuffer + RealTimePipeline
+鈹?  鈹溾攢鈹€ evaluation/               # Metrics
+鈹?  鈹?  鈹斺攢鈹€ metrics.py            # Comprehensive evaluation
+鈹?  鈹溾攢鈹€ intent/                    # Intent encoding
+鈹?  鈹?  鈹溾攢鈹€ intent_encoder.py     # MI to cognitive mode mapping
+鈹?  鈹?  鈹斺攢鈹€ context_manager.py    # State machine + dialogue context
+鈹?  鈹溾攢鈹€ llm_bridge/               # LLM integration
+鈹?  鈹?  鈹斺攢鈹€ llm_client.py         # Ollama/API/Mock pluggable backend
+鈹?  鈹溾攢鈹€ feedback/                 # Visual feedback
+鈹?  鈹?  鈹斺攢鈹€ visual_feedback.py    # Flask+SSE real-time web UI
+鈹?  鈹斺攢鈹€ utils/                    # Utilities
+鈹?      鈹斺攢鈹€ config.py             # Configuration management
+鈹溾攢鈹€ tests/                       # Unit tests
+鈹?  鈹溾攢鈹€ test_intent_encoder.py   # Intent encoder tests
+鈹?  鈹溾攢鈹€ test_context_manager.py  # Context manager tests
+鈹?  鈹溾攢鈹€ test_llm_client.py       # LLM client tests
+鈹?  鈹溾攢鈹€ test_config.py           # Config module tests
+鈹?  鈹溾攢鈹€ test_eeg_stream_manager.py  # EEG stream manager tests
+鈹?  鈹斺攢鈹€ test_decoders.py         # Decoder module tests
+鈹溾攢鈹€ scripts/                      # Executable scripts
+鈹?  鈹溾攢鈹€ realtime_demo.py          # Real-time pipeline demo - mock stream or trained model
+鈹?  鈹溾攢鈹€ collaborative_reasoning_demo.py  # BCI脳LLM collaborative demo
+鈹?  鈹溾攢鈹€ train_eegnet.py           # EEGNet training (with anti-collapse measures)
+鈹?  鈹溾攢鈹€ train_ensemble.py         # Ensemble training
+鈹?  鈹溾攢鈹€ train_csp.py              # CSP training
+鈹?  鈹溾攢鈹€ train_riemann.py          # Riemannian training
+鈹?  鈹溾攢鈹€ compare_models.py         # Model comparison
+鈹?  鈹斺攢鈹€ tune_eegnet.py            # Hyperparameter tuning
+鈹溾攢鈹€ visualizations/               # Charts (CN + EN)
+鈹溾攢鈹€ configs/                      # Configuration files
+鈹?  鈹溾攢鈹€ default.yaml              # Default training configuration
+鈹?  鈹斺攢鈹€ phase1.yaml               # Collaborative reasoning runtime config (legacy filename)
+鈹溾攢鈹€ outputs/                      # Results and checkpoints
+鈹溾攢鈹€ README.md                     # This file
+鈹斺攢鈹€ requirements.txt              # Python dependencies
 ```
 
-## 🔧 Installation
+## 馃敡 Installation
 
 ### Prerequisites
 
@@ -321,12 +320,12 @@ Edit the YAML file directly, no code changes needed.
 ### Connecting a Real LLM (Pick a Backend)
 
 The demo works out of the box with canned responses (`--backend mock`).
-For real generation, pick **one** of the backends below — they all implement
+For real generation, pick **one** of the backends below 鈥?they all implement
 the same `LLMClient` interface, so switching is a one-flag change.
 
 | Backend | Setup | Cost | Runs locally? | Best for |
 |---------|-------|------|---------------|----------|
-| `mock` | none | free | — | 30-second trial, CI, no LLM at all |
+| `mock` | none | free | 鈥?| 30-second trial, CI, no LLM at all |
 | `ollama` | install Ollama + pull a model | free | yes | privacy, offline use, no API key, own GPU |
 | `api` | get an API key | pay-per-token | no (cloud) | best quality, no GPU needed |
 | `coze` | deploy a Coze agent + token | per plan | no (cloud) | Coze users, agent-side prompt control |
@@ -336,7 +335,7 @@ falls back to mock responses** instead of crashing. Check the terminal banner
 and the UI badge to see which backend is actually live (see
 [Verify which backend is live](#verify-which-backend-is-live)).
 
-#### Option 1 — Ollama (local, free, private)
+#### Option 1 鈥?Ollama (local, free, private)
 
 1. Install Ollama from <https://ollama.com/download> (Windows / macOS / Linux).
 2. Pull a model that fits your RAM / VRAM:
@@ -361,7 +360,7 @@ and the UI badge to see which backend is actually live (see
 
    Use `--model` and `--host` to override the model name and server URL.
 
-#### Option 2 — Any OpenAI-compatible API (DeepSeek, OpenAI, Moonshot, vLLM, ...)
+#### Option 2 鈥?Any OpenAI-compatible API (DeepSeek, OpenAI, Moonshot, vLLM, ...)
 
 Works with every endpoint that implements `/chat/completions`.
 
@@ -377,7 +376,7 @@ Works with every endpoint that implements `/chat/completions`.
    ```
 
    ...or keep the key out of your shell history: copy `.env.example` to `.env`
-   and fill in the values — the demo loads `.env` automatically.
+   and fill in the values 鈥?the demo loads `.env` automatically.
 
    ```bash
    cp .env.example .env   # then edit .env
@@ -393,7 +392,7 @@ Works with every endpoint that implements `/chat/completions`.
    | Moonshot Kimi | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |
    | Local vLLM | `http://localhost:8000/v1` | your served model |
 
-#### Option 3 — Coze agent (relay through a deployed Coze agent)
+#### Option 3 鈥?Coze agent (relay through a deployed Coze agent)
 
 Instead of calling a raw model endpoint, NeuroDecode can relay prompts to an
 agent deployed on Coze (coze.cn / coze.com). The agent forwards the prompt to
@@ -464,29 +463,29 @@ The suite covers intent encoder, context manager, LLM client, config, EEG stream
 
 ---
 
-## ⚡ Performance
+## Performance
 
 Measured on the real code path (`VisualFeedback.update_eeg`) with
-`scripts/bench_feedback.py` — Windows 11, i7-14650HX, 2026-08-19.
+`scripts/bench_feedback.py` 鈥?Windows 11, i7-14650HX, 2026-08-19.
 
 **EEG batch producer throughput** (8-channel windows):
 
-| Window size | Downsample ×1 | Downsample ×4 | Speedup |
+| Window size | Downsample 脳1 | Downsample 脳4 | Speedup |
 |---|---|---|---|
-| 32 × 8ch | 18,369 ev/s | 59,195 ev/s | 3.2× |
-| 256 × 8ch | 2,508 ev/s | 9,673 ev/s | 3.9× |
-| 512 × 8ch | 1,251 ev/s | 4,962 ev/s | 4.0× |
+| 32 脳 8ch | 18,369 ev/s | 59,195 ev/s | 3.2脳 |
+| 256 脳 8ch | 2,508 ev/s | 9,673 ev/s | 3.9脳 |
+| 512 脳 8ch | 1,251 ev/s | 4,962 ev/s | 4.0脳 |
 
 **SSE payload serialization** (256-sample window, per event):
 
 | Concurrent clients | Naive (serialize per client) | Pre-serialized (serialize once) | Speedup |
 |---|---|---|---|
-| 1 | 403.3 µs | 408.8 µs | ~1.0× |
-| 2 | 788.7 µs | 394.1 µs | 2.0× |
-| 5 | 1,968.5 µs | 394.5 µs | 5.0× |
+| 1 | 403.3 碌s | 408.8 碌s | ~1.0脳 |
+| 2 | 788.7 碌s | 394.1 碌s | 2.0脳 |
+| 5 | 1,968.5 碌s | 394.5 碌s | 5.0脳 |
 
-**Network payload**: downsample ×4 shrinks each EEG batch event by **74.9%**
-(17,287 B → 4,343 B for a 256-sample window).
+**Network payload**: downsample 脳4 shrinks each EEG batch event by **74.9%**
+(17,287 B 鈫?4,343 B for a 256-sample window).
 
 Reproduce with: `python scripts/bench_feedback.py`
 
