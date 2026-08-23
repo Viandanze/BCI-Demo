@@ -2,8 +2,8 @@
 LLM Bridge - Abstract interface for LLM backends.
 
 Supports:
-  - Ollama (local, private, zero-cost) — default for Phase 1
-  - OpenAI-compatible API (cloud, higher quality) — Phase 2
+  - Ollama (local, private, zero-cost) — default backend
+  - OpenAI-compatible API (cloud, higher quality)
   - Coze agent (deployed Coze Coding agent relay, async task API)
 
 Design:
@@ -81,7 +81,7 @@ class LLMClient(ABC):
 
 
 class OllamaClient(LLMClient):
-    """Ollama local LLM client (default backend for Phase 1)."""
+    """Ollama local LLM client (default backend)."""
 
     MODE_DESCRIPTIONS = {
         "query": (
@@ -274,7 +274,7 @@ class OllamaClient(LLMClient):
 
 class APIClient(LLMClient):
     """
-    OpenAI-compatible API client (for Phase 2).
+    OpenAI-compatible API client.
 
     Works with any OpenAI-compatible endpoint:
       - DeepSeek API
@@ -680,7 +680,7 @@ class MockLLMClient(LLMClient):
 
 
 class CachedLLMClient(LLMClient):
-    """Caching decorator around any LLMClient (Phase 3 performance).
+    """Caching decorator around any LLMClient.
 
     Repeated identical requests (same intent mode, context, candidate
     count and topic hint) within the TTL return a cached copy without

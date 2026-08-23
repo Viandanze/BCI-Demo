@@ -1,4 +1,4 @@
-"""Configuration management for NeuroDecode Phase 1.
+"""Configuration management for NeuroDecode.
 
 Provides default configuration and YAML-based config loading with deep merge
 support. CLI arguments override config file values, which override defaults.
@@ -61,12 +61,12 @@ _DEFAULT_CONFIG = {
 
 
 def load_config(config_path: Optional[str] = None) -> dict:
-    """Load Phase 1 configuration from YAML file.
+    """Load configuration from YAML file.
 
     Falls back to built-in defaults if file is missing or PyYAML not installed.
 
     Args:
-        config_path: Path to YAML config file. If None, uses configs/phase1.yaml
+        config_path: Path to YAML config file. If None, uses configs/demo.yaml
             relative to the project root.
 
     Returns:
@@ -77,7 +77,7 @@ def load_config(config_path: Optional[str] = None) -> dict:
     if config_path is None:
         config_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'configs', 'phase1.yaml'
+            'configs', 'demo.yaml'
         )
 
     if yaml is not None and os.path.exists(config_path):
@@ -94,6 +94,6 @@ def load_config(config_path: Optional[str] = None) -> dict:
         _deep_merge(config, loaded)
         logger.info(f"Config loaded from {config_path}")
     else:
-        logger.info("Using default config (configs/phase1.yaml not found or PyYAML not installed)")
+        logger.info("Using default config (configs/demo.yaml not found or PyYAML not installed)")
 
     return config

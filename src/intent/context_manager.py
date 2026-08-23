@@ -80,7 +80,7 @@ class ContextManager:
         self._selection_timeout = selection_timeout
         self._last_state_change = time.time()
         self._turn_start_time = 0.0
-        # Rolling session stats (Phase 2): survive turn-list trimming so
+        # Rolling session stats: survive turn-list trimming so
         # the enhanced LLM context keeps a complete session summary.
         self._stats = {
             "total_turns": 0,
@@ -170,7 +170,7 @@ class ContextManager:
             self._current_turn.final_response = self._current_turn.llm_candidates[index]
             self._current_turn.duration = time.time() - self._turn_start_time
 
-            # Update rolling session stats before archiving (Phase 2).
+            # Update rolling session stats before archiving.
             done = self._current_turn
             self._stats["total_turns"] += 1
             self._stats["mode_counts"][done.intent_mode] = (
@@ -214,7 +214,7 @@ class ContextManager:
 
     def record_eeg_stats(self, mean_confidence: float,
                          intent_distribution: dict) -> None:
-        """Record the latest decoder-side EEG statistics (Phase 2).
+        """Record the latest decoder-side EEG statistics.
 
         Injected into the enhanced LLM context so the model knows the
         current signal quality and intent distribution.
@@ -251,7 +251,7 @@ class ContextManager:
             return self._summary_locked()
 
     def get_enhanced_context(self, max_turns: int = 3) -> list[dict]:
-        """Richer context for the LLM (Phase 2).
+        """Richer context for the LLM.
 
         Combines: whole-session summary + latest EEG statistics + the most
         recent turns verbatim. The summary is injected as a user/assistant

@@ -192,7 +192,7 @@ class IntentEncoder:
         """
         Encode a BCI selection from candidate list.
 
-        For Phase 1, we use a simple mapping:
+        We use a simple mapping:
           Left Hand  → candidate 0 (first)
           Right Hand → candidate 1 (second)
           Feet       → candidate 2 (third)

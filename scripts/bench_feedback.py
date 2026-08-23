@@ -1,9 +1,9 @@
-"""Benchmark: Phase 3 visual feedback performance paths.
+"""Benchmark: visual feedback performance paths.
 
 Measures on the real code path (VisualFeedback.update_eeg):
   1. Producer throughput with/without downsampling (events/s, us/event)
   2. Per-event serialization cost for K SSE clients
-     (Phase 3 pre-serialized vs naive per-client json.dumps)
+     (pre-serialized vs naive per-client json.dumps)
   3. Payload size reduction from downsampling
 
 Run:  python scripts/bench_feedback.py
@@ -69,7 +69,7 @@ def bench_clients(payload_dict, k_clients, n_events=2000):
             json.dumps(payload_dict)
     naive = (time.perf_counter() - t0) / n_events * 1e6
 
-    # Phase 3: serialize once, reuse the same string for all clients
+    # Serialize once, reuse the same string for all clients
     t0 = time.perf_counter()
     for _ in range(n_events):
         s = json.dumps(payload_dict)
@@ -84,7 +84,7 @@ def bench_clients(payload_dict, k_clients, n_events=2000):
 
 def main():
     print("=" * 64)
-    print("NeuroDecode Phase 3 feedback pipeline benchmark")
+    print("NeuroDecode feedback pipeline benchmark")
     print("=" * 64)
 
     results = {"producer": {}, "clients": {}, "payload": {}}

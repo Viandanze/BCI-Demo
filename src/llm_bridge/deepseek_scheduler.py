@@ -1,5 +1,5 @@
 """
-DeepSeek cost-aware scheduling (Phase 2).
+DeepSeek cost-aware scheduling.
 
 DeepSeek roughly doubles its prices during peak hours
 (09:00-12:00 and 14:00-18:00, Beijing time). This module lets the demo

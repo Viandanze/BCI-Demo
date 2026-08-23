@@ -541,7 +541,7 @@ class VisualFeedback:
   </div>
 
   <footer>
-    <span>NeuroDecode Phase 1 // <span id="sb-mode">Mock Mode</span></span>
+    <span>NeuroDecode // <span id="sb-mode">Mock Mode</span></span>
     <span id="uptime">SESSION 00:00:00</span>
   </footer>
 
@@ -841,7 +841,7 @@ setInterval(function() {
         self._setup_routes()
 
     def _load_template(self, template_path: Optional[str]) -> str:
-        """Load the dashboard HTML (Phase 3 externalization).
+        """Load the dashboard HTML template.
 
         Resolution order:
           1. Explicit `template_path` argument.
@@ -891,7 +891,7 @@ setInterval(function() {
                     try:
                         data = self._eeg_queue.get(timeout=0.95)
                         # EEG batches are pre-serialized in update_eeg()
-                        # (Phase 3: serialize once, reuse across clients).
+                        # (serialize once, reuse across clients).
                         yield f"data: {data}\n\n"
                     except Empty:
                         yield ": keepalive\n\n"
@@ -919,7 +919,7 @@ setInterval(function() {
         Returns:
             True if successfully queued, False if dropped due to full queue.
         """
-        # Phase 3 performance: downsample before pushing (the frontend
+        # Performance: downsample before pushing (the frontend
         # waveform auto-fits any point count), and serialize once here so
         # every SSE client reuses the same JSON payload string.
         if self._eeg_downsample > 1 and len(eeg_batch) > self._eeg_downsample:

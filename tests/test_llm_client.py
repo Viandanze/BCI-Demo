@@ -420,7 +420,7 @@ class CountingClient(LLMClient):
 
 
 class TestCachedLLMClient:
-    """Phase 3 response cache."""
+    """Response cache."""
 
     def test_identical_request_hits_cache(self):
         inner = CountingClient()

@@ -1,5 +1,5 @@
 """
-Audio feedback for BCI interaction events (Phase 2).
+Audio feedback for BCI interaction events.
 
 Zero third-party dependencies:
   - Windows: winsound.Beep (system speaker / default audio device).

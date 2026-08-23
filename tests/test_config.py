@@ -173,7 +173,7 @@ class TestLoadConfigEdgeCases:
         assert config == _DEFAULT_CONFIG
 
     def test_config_path_none_uses_default_location(self):
-        """When config_path is None, should look for configs/phase1.yaml."""
+        """When config_path is None, should look for configs/demo.yaml."""
         # This should either load the real file or fall back to defaults
         config = load_config(None)
         assert isinstance(config, dict)

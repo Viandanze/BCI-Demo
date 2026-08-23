@@ -1,7 +1,7 @@
 """
 Collaborative Reasoning Demo - BCI x LLM
 
-Main entry point for Phase 1 of the NeuroDecode collaborative reasoning system.
+Main entry point for the NeuroDecode collaborative reasoning system.
 
 Pipeline:
   BrainFlow Synthetic Board
@@ -39,7 +39,7 @@ Usage:
   python scripts/collaborative_reasoning_demo.py --backend coze --real-decoder
 
   # Custom config:
-  python scripts/collaborative_reasoning_demo.py --config configs/phase1.yaml
+  python scripts/collaborative_reasoning_demo.py --config configs/demo.yaml
 
 Prerequisites:
   pip install brainflow flask numpy scipy pyyaml
@@ -193,7 +193,7 @@ class CollaborativeReasoningDemo:
             )
         self.feedback.port = config['feedback']['port']
 
-        # Phase 2 audio cues (silent no-op without a beep backend).
+        # Audio cues (silent no-op without a beep backend).
         if audio is not None:
             self.audio = audio
         else:
@@ -316,7 +316,7 @@ class CollaborativeReasoningDemo:
                         f"(confidence: {intent.confidence:.2%})")
             self.audio.play("intent_locked")
 
-            # Phase 2: feed decoder-side stats into the LLM context.
+            # Feed decoder-side stats into the LLM context.
             intent_dict = intent.to_dict()
             raw_probs = intent_dict.get("raw_probabilities") or []
             labels = self.config['decoder']['class_labels']
@@ -349,7 +349,7 @@ class CollaborativeReasoningDemo:
             self.context_manager.reset_to_idle()
             return
 
-        # Phase 2: session summary + recent turns + EEG stats.
+        # Session summary + recent turns + EEG stats.
         context = self.context_manager.get_enhanced_context()
         logger.info(f"Querying LLM in background (mode={current_turn.intent_mode})...")
 
@@ -624,7 +624,7 @@ def main():
     )
     parser.add_argument(
         "--config", default=None,
-        help="Path to YAML config file (default: configs/phase1.yaml)",
+        help="Path to YAML config file (default: configs/demo.yaml)",
     )
 
     args = parser.parse_args()

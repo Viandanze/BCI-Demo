@@ -1,5 +1,5 @@
 """
-Tests for VisualFeedback Phase 3 changes.
+Tests for VisualFeedback template and performance changes.
 
 Covers:
   - Template externalization: explicit path, bundled file, inline fallback
@@ -65,7 +65,7 @@ class TestEEGDownsample:
         vf = VisualFeedback(eeg_downsample=2)
         assert vf.update_eeg(_make_batch(400)) is True
         payload = vf._eeg_queue.get_nowait()
-        # Queue now holds pre-serialized JSON strings (Phase 3).
+        # Queue now holds pre-serialized JSON strings.
         assert isinstance(payload, str)
         event = json.loads(payload)
         assert event["type"] == "eeg_batch"

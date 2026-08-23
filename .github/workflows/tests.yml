@@ -23,10 +23,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements_phase1.txt
-          pip install mne scikit-learn tqdm
-          pip install pytest
           pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+          pip install pytest
 
       - name: Run tests
         run: python -m pytest tests/ -q --tb=short

@@ -108,7 +108,7 @@ NeuroDecode/
 ├── visualizations/               # Charts (CN + EN)
 ├── configs/                      # Configuration files
 │   ├── default.yaml              # Default training configuration
-│   └── phase1.yaml               # Collaborative reasoning runtime config (legacy filename)
+│   └── demo.yaml                 # Collaborative reasoning runtime config
 ├── outputs/                      # Results and checkpoints
 ├── README.md                     # This file
 └── requirements.txt              # Python dependencies
@@ -287,7 +287,7 @@ EEG Signal -> BrainFlow -> EEGNet Decoder -> IntentEncoder -> ContextManager
 
 ```bash
 # Install collaborative-reasoning dependencies
-pip install -r requirements_phase1.txt
+pip install -r requirements.txt
 
 # Run collaborative reasoning demo with mock LLM
 python scripts/collaborative_reasoning_demo.py --backend mock
@@ -296,14 +296,14 @@ python scripts/collaborative_reasoning_demo.py --backend mock
 python scripts/collaborative_reasoning_demo.py --backend mock --real-decoder
 
 # With custom config file
-python scripts/collaborative_reasoning_demo.py --config configs/phase1.yaml
+python scripts/collaborative_reasoning_demo.py --config configs/demo.yaml
 
 # Open browser to http://127.0.0.1:8080
 ```
 
 ### Configuration
 
-All runtime parameters are externalized to `configs/phase1.yaml`. CLI arguments override config values.
+All runtime parameters are externalized to `configs/demo.yaml`. CLI arguments override config values.
 
 | Section | Parameters | Description |
 |---------|-----------|-------------|

@@ -1,5 +1,5 @@
 """
-Tests for DeepSeek cost-aware scheduling (Phase 2).
+Tests for DeepSeek cost-aware scheduling.
 
 Covers:
   - is_peak_hour boundary conditions (09-12 / 14-18, end-exclusive)

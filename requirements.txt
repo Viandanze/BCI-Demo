@@ -1,3 +1,5 @@
+# --- Core signal processing / decoding ---
+
 mne>=1.0.0
 pyriemann>=0.3.0
 braindecode>=0.8.0
@@ -8,6 +10,13 @@ scikit-learn>=1.0.0
 matplotlib>=3.5.0
 pyyaml>=6.0
 tqdm>=4.0.0
+
+# --- Collaborative reasoning demo (web feedback + synthetic board) ---
+flask>=3.0
+brainflow>=5.2
+requests>=2.28
+
 # Optional but recommended
 # pyedflib>=0.1.30  # For EDF file reading
 # seaborn>=0.11.0  # For visualization
+

@@ -1,5 +1,5 @@
 """
-Tests for AudioFeedback (Phase 2).
+Tests for AudioFeedback.
 
 Covers:
   - Event pattern registry completeness

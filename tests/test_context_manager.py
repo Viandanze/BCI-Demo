@@ -307,7 +307,7 @@ class TestThreadSafety:
 
 
 class TestEnhancedContext:
-    """Phase 2: session summary + EEG stats + enhanced context."""
+    """Session summary + EEG stats + enhanced context."""
 
     @staticmethod
     def _run_turn(cm, mode="query", conf=0.8, response="answer"):
