@@ -2,6 +2,10 @@
 
 [![Tests](https://github.com/Viandanze/NeuroDecode/actions/workflows/tests.yml/badge.svg)](https://github.com/Viandanze/NeuroDecode/actions/workflows/tests.yml)
 
+Live collaborative-reasoning dashboard (EEG stream -> intent decoding -> LLM candidates), served by the demo at `http://127.0.0.1:8080`:
+
+![Dashboard](assets/dashboard.png)
+
 A comprehensive toolkit for EEG-based Motor Imagery classification, implementing deep learning, classical ML, and ensemble approaches with real-time BrainFlow streaming support.
 
 **Status: feature-complete.** All planned modules are implemented and validated (239 tests green on GitHub Actions CI); no further phases are planned.
