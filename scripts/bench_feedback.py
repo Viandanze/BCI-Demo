@@ -56,6 +56,7 @@ def bench_producer(server, batch, n_events=2000):
         "events_per_s": round(n_events / dt, 1),
         "us_per_event": round(dt / n_events * 1e6, 1),
         "p50_us": round(lat[len(lat) // 2] * 1e6, 1),
+        "p95_us": round(lat[int(len(lat) * 0.95)] * 1e6, 1),
         "p99_us": round(lat[int(len(lat) * 0.99)] * 1e6, 1),
     }
 

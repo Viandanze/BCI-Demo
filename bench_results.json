@@ -1,0 +1,81 @@
+{
+  "producer": {
+    "samples=32,factor=1": {
+      "events_per_s": 24759.4,
+      "us_per_event": 40.4,
+      "p50_us": 39.1,
+      "p95_us": 43.1,
+      "p99_us": 53.0
+    },
+    "samples=32,factor=4": {
+      "events_per_s": 72360.7,
+      "us_per_event": 13.8,
+      "p50_us": 12.9,
+      "p95_us": 14.1,
+      "p99_us": 25.9
+    },
+    "samples=256,factor=1": {
+      "events_per_s": 2895.0,
+      "us_per_event": 345.4,
+      "p50_us": 340.1,
+      "p95_us": 407.5,
+      "p99_us": 483.3
+    },
+    "samples=256,factor=4": {
+      "events_per_s": 11764.2,
+      "us_per_event": 85.0,
+      "p50_us": 84.0,
+      "p95_us": 95.9,
+      "p99_us": 143.6
+    },
+    "samples=512,factor=1": {
+      "events_per_s": 1458.9,
+      "us_per_event": 685.4,
+      "p50_us": 679.0,
+      "p95_us": 770.7,
+      "p99_us": 851.1
+    },
+    "samples=512,factor=4": {
+      "events_per_s": 6005.8,
+      "us_per_event": 166.5,
+      "p50_us": 164.3,
+      "p95_us": 180.5,
+      "p99_us": 231.4
+    }
+  },
+  "clients": {
+    "k=1": {
+      "k_clients": 1,
+      "naive_us": 350.2,
+      "pre_serialized_us": 340.0,
+      "saved_us": 10.3,
+      "speedup": 1.03
+    },
+    "k=2": {
+      "k_clients": 2,
+      "naive_us": 671.5,
+      "pre_serialized_us": 332.4,
+      "saved_us": 339.1,
+      "speedup": 2.02
+    },
+    "k=5": {
+      "k_clients": 5,
+      "naive_us": 1695.1,
+      "pre_serialized_us": 370.1,
+      "saved_us": 1324.9,
+      "speedup": 4.58
+    }
+  },
+  "payload": {
+    "samples=256": {
+      "full_bytes": 17287,
+      "downsampled_bytes": 4343,
+      "reduction_pct": 74.9
+    },
+    "samples=512": {
+      "full_bytes": 34593,
+      "downsampled_bytes": 8669,
+      "reduction_pct": 74.9
+    }
+  }
+}
